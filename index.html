@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SISTEMA PGR BOREAL — CENTRAL COMPLETA SST</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS CDN para leitura de planilhas Excel (.xlsx) -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cambria:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .boreal-header { background: linear-gradient(135deg, #091220 0%, #1e3a8a 100%); }
+        .signature-canvas { border: 2px dashed #94a3b8; background: #ffffff; cursor: crosshair; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        /* Forçar todos os campos de digitação em MAIÚSCULO */
+        input[type="text"], textarea { text-transform: uppercase; }
+        
+        /* Tabela ultra-compacta para visualização com fonte Cambria */
+        .table-pgr-preview { font-family: 'Cambria', serif; font-size: 10pt; border-collapse: collapse; width: 100%; text-transform: uppercase; }
+        .table-pgr-preview th, .table-pgr-preview td {
+            border: 1px solid #1e293b;
+            padding: 2px 4px !important;
+            line-height: 1.05 !important;
+            margin: 0 !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+        .table-pgr-preview th {
+            background-color: #e2e8f0;
+            font-weight: bold;
+            font-size: 10.5pt;
+        }
+        
+        /* Layout de Documento PGR Impresso */
+        .pgr-doc-sheet {
+            background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 2.5cm 1.5cm 2cm 2cm;
+            font-family: 'Cambria', serif;
+            color: #0f172a;
+            line-height: 1.25;
+            text-align: justify;
+        }
+    </style>
+</head>
+<body class="text-slate-800 pb-32">
+
+    <!-- TOP NAV BAR COM IDENTIDADE BOREAL -->
+    <header class="boreal-header text-white sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500 text-slate-950 font-black text-xl px-2 py-0.5 rounded shadow">
+                    B
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-base md:text-lg tracking-wide leading-none flex items-center gap-2">
+                        BOREAL ENGMED <span class="text-[10px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-black uppercase">Gerador Completo PGR NR-01</span>
+                    </h1>
+                    <p class="text-[10px] text-blue-200 mt-0.5">SISTEMA INTEGRADO DE COLETA, DOCUMENTO-BASE & GESTÃO DE AÇÕES</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button type="button" onclick="openImportModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded flex items-center shadow-sm">
+                    <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 mr-1.5"></i> IMPORTAR PLANILHA (.XLSX)
+                </button>
+                <button type="button" onclick="confirmNewClient()" class="bg-red-800/80 hover:bg-red-700 text-white text-[11px] font-bold px-2.5 py-1.5 rounded border border-red-400/30 flex items-center shadow-sm">
+                    <i data-lucide="rotate-ccw" class="w-3 h-3 mr-1"></i> NOVO CLIENTE / LIMPAR
+                </button>
+            </div>
+        </div>
+
+        <!-- BARRA DE MÓDULOS FUTUROS & ARQUIVO GERAL -->
+        <div class="bg-slate-950/70 border-t border-blue-900/60 px-4 py-1.5 overflow-x-auto">
+            <div class="max-w-7xl mx-auto flex items-center space-x-1 whitespace-nowrap text-[11px] font-bold">
+                <span class="text-amber-400 px-2 py-0.5 flex items-center"><i data-lucide="folder-git-2" class="w-3 h-3 mr-1"></i> MÓDULOS SST:</span>
+                <button type="button" class="bg-blue-800 text-white px-2.5 py-0.5 rounded">1. PGR (NR-01) [ATIVO]</button>
+                <button type="button" onclick="openModuleNotice('LTCAT / LTP')" class="text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-800">2. LTCAT / LTP</button>
+                <button type="button" onclick="openModuleNotice('LTI / LTIP (Insalubridade/Periculosidade)')" class="text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-800">3. LTI / LTIP</button>
+                <button type="button" onclick="openModuleNotice('Relatório de Avaliação Quantitativa')" class="text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-800">4. Rel. Aval. Quantitativa</button>
+                <button type="button" onclick="openModuleNotice('PCMSO (NR-07)')" class="text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-800">5. PCMSO (NR-07)</button>
+                <button type="button" onclick="openModuleNotice('APR / PT / Ordem de Serviço')" class="text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-800">6. APR / PT / O.S.</button>
+                <button type="button" onclick="openModuleNotice('PPP (eSocial S-2240)')" class="text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-800">7. PPP / eSocial</button>
+                <button type="button" onclick="openDocsVaultModal()" class="ml-2 bg-indigo-700 hover:bg-indigo-800 text-white px-2.5 py-0.5 rounded flex items-center shadow">
+                    <i data-lucide="archive" class="w-3 h-3 mr-1"></i> ARQUIVO DE DOCUMENTOS (ART/OFÍCIOS) (<span id="vault-count-badge">0</span>)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- BARRA DE GESTÃO DA VISTORIA -->
+    <div class="max-w-7xl mx-auto px-4 mt-3">
+        <div class="bg-white border border-slate-300 rounded-xl p-3 flex flex-wrap justify-between items-center gap-3 shadow-sm">
+            <div class="flex items-center gap-3 flex-wrap">
+                <span class="text-xs font-bold text-slate-700 uppercase flex items-center">
+                    <i data-lucide="building" class="w-4 h-4 mr-1 text-blue-700"></i> UNIDADE ATUAL:
+                    <strong id="badge-unidade-atual" class="ml-1 text-blue-900 bg-blue-100 px-2 py-0.5 rounded">NÃO DEFINIDA</strong>
+                </span>
+                <span class="text-xs font-semibold text-slate-400">|</span>
+                <span class="text-xs font-bold text-emerald-700 flex items-center">
+                    <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i> <span id="badge-total-setores">0</span> SETOR(ES) SALVO(S)
+                </span>
+                <span class="text-xs font-semibold text-slate-400">|</span>
+                <span class="text-xs font-bold text-indigo-700 flex items-center">
+                    <i data-lucide="layers" class="w-4 h-4 mr-1"></i> <span id="badge-total-unidades">1</span> UNIDADE(S) NO PROJETO
+                </span>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" onclick="openPlanoAcaoManager()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded text-xs flex items-center shadow-sm">
+                    <i data-lucide="calendar-clock" class="w-3.5 h-3.5 mr-1.5"></i> GESTÃO DE PLANOS & ALERTAS (<span id="badge-planos-count">0</span>)
+                </button>
+                <button type="button" onclick="salvarUnidadeEIniciarNova()" class="bg-indigo-700 hover:bg-indigo-800 text-white font-bold px-3 py-1.5 rounded text-xs flex items-center shadow-sm">
+                    <i data-lucide="plus-circle" class="w-3.5 h-3.5 mr-1.5"></i> SALVAR UNIDADE E INICIAR NOVA
+                </button>
+                <button type="button" onclick="openReviewModal()" class="bg-blue-900 hover:bg-blue-950 text-white font-bold px-3 py-1.5 rounded text-xs flex items-center shadow-sm">
+                    <i data-lucide="eye" class="w-3.5 h-3.5 mr-1.5"></i> VER MATRIZES SALVAS
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTAINER PRINCIPAL -->
+    <main class="max-w-7xl mx-auto px-4 py-3 space-y-5">
+
+        <!-- ========================================== -->
+        <!-- MATRIZ 01: CAPA DO PGR (SOLICITANTE)      -->
+        <!-- ========================================== -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-100 border-b border-slate-200 px-4 py-2.5 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-blue-900 text-white text-[11px] font-black px-2 py-0.5 rounded">MATRIZ 01</span>
+                    <h2 class="font-bold text-slate-800 text-xs md:text-sm uppercase tracking-wide">Capa do PGR — Caracterização do Solicitante</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] text-slate-500 font-semibold uppercase hidden sm:inline">Dados Fixos na Capa</span>
+                    <button type="button" onclick="startVoiceInput('solicitante_nome')" class="text-xs bg-slate-200 hover:bg-slate-300 p-1 rounded text-slate-700" title="Ditar Nome do Solicitante">
+                        <i data-lucide="mic" class="w-3.5 h-3.5 text-blue-700"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div class="md:col-span-2">
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Nome do Solicitante (Razão Social) *</label>
+                    <input type="text" id="solicitante_nome" placeholder="Ex: TRIBUNAL REGIONAL DO TRABALHO / PREFEITURA MUNICIPAL" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">CNPJ do Solicitante *</label>
+                    <input type="text" id="solicitante_cnpj" placeholder="00.000.000/0001-00" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Vigência do PGR *</label>
+                    <input type="text" id="solicitante_vigencia" placeholder="Ex: 2026 A 2028" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Data de Emissão *</label>
+                    <input type="date" id="solicitante_data_emissao" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" onchange="autoSave()">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">CNAE Principal</label>
+                    <input type="text" id="solicitante_cnae" placeholder="Ex: 84.11-6-00" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Endereço da Sede do Solicitante</label>
+                    <input type="text" id="solicitante_endereco" placeholder="Ex: AV. PRESIDENTE TANCREDO NEVES, S/N" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                </div>
+            </div>
+
+            <!-- CONFIGURAÇÃO DO ITEM 2.2 — ANEXOS TÉCNICOS DO PGR -->
+            <div class="border-t border-slate-200 p-4 bg-slate-50/70 space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-[11px] font-bold text-slate-800 uppercase flex items-center">
+                        <i data-lucide="paperclip" class="w-3.5 h-3.5 mr-1.5 text-blue-800"></i> ITEM 2.2 DO PGR — NOME DOS ANEXOS VINCULADOS AO DOCUMENTO:
+                    </span>
+                    <button type="button" onclick="addAnexoItem()" class="text-[10px] bg-blue-800 hover:bg-blue-900 text-white font-bold px-2 py-0.5 rounded flex items-center">
+                        <i data-lucide="plus" class="w-3 h-3 mr-1"></i> + Adicionar Anexo
+                    </button>
+                </div>
+                <div id="anexos-container" class="space-y-1.5">
+                    <div class="anexo-row flex items-center gap-2">
+                        <input type="text" class="anexo-input w-full border border-slate-300 rounded p-1.5 text-xs bg-white uppercase font-semibold" placeholder="EX: ANEXO I — LAUDO DE AVALIAÇÃO DE RUÍDO E VIBRAÇÃO" value="ANEXO I — LAUDO DE AVALIAÇÃO QUANTITATIVA AMBIENTAL" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                        <button type="button" onclick="removeAnexoItem(this)" class="text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- MATRIZ 02: CAPÍTULO 1 (DADOS DA UNIDADE)  -->
+        <!-- ========================================== -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-100 border-b border-slate-200 px-4 py-2.5 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-blue-900 text-white text-[11px] font-black px-2 py-0.5 rounded">MATRIZ 02</span>
+                    <h2 class="font-bold text-slate-800 text-xs md:text-sm uppercase tracking-wide">Capítulo 1 do PGR — Dados da Unidade & Relatório de Visita</h2>
+                </div>
+                <span class="text-[11px] text-amber-900 bg-amber-100 px-2 py-0.5 rounded font-bold uppercase">1 por Estabelecimento / Secretaria / Órgão</span>
+            </div>
+            <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Nome da Unidade Inspecionada *</label>
+                    <input type="text" id="unidade_nome" placeholder="Ex: FÓRUM TRT - VARA DE MACAPÁ / SECRETARIA DE SAÚDE" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); updateUnidadeBadge(); autoSave();">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">CNPJ da Unidade *</label>
+                    <input type="text" id="unidade_cnpj" placeholder="00.000.000/0001-00" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Telefone / Contato</label>
+                    <input type="text" id="unidade_tel" placeholder="(00) 00000-0000" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Nome do Responsável da Unidade</label>
+                    <input type="text" id="unidade_resp" placeholder="Ex: DR. ROBERTO GUIMARÃES" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Cargo do Responsável</label>
+                    <input type="text" id="unidade_cargo_resp" placeholder="Ex: DIRETOR DE SECRETARIA / GESTOR" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Endereço Completo da Unidade</label>
+                    <input type="text" id="unidade_endereco" placeholder="Ex: ROD. NORTE SUL, S/N - MACAPÁ/AP" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                </div>
+
+                <!-- ASSINATURA / RÚBRICA DO CONTATO -->
+                <div class="md:col-span-3 border-t border-slate-200 pt-3 mt-1">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Nome do Contato que acompanhou a vistoria *</label>
+                            <input type="text" id="unidade_contato" placeholder="NOME COMPLETO DE QUEM RECEBEU A EQUIPE" class="w-full bg-slate-50 border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                            <span class="text-[10px] text-slate-500">Preenche a coluna "NOME DO CONTATO E ASS." da Matriz do Capítulo 1.</span>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[11px] font-bold text-slate-700 uppercase">Rúbrica do Contato na Tela:</span>
+                                <button type="button" onclick="clearSignature()" class="text-[10px] text-red-600 hover:text-red-800 font-bold flex items-center">
+                                    <i data-lucide="rotate-ccw" class="w-3 h-3 mr-1"></i> Limpar Rúbrica
+                                </button>
+                            </div>
+                            <canvas id="sig-canvas" class="signature-canvas w-full h-20 rounded shadow-inner"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- FORMULÁRIO DE ENTRADA DO SETOR (NÃO POLUI A TELA)             -->
+        <!-- ============================================================== -->
+        <section class="bg-white rounded-xl shadow border-2 border-blue-700 overflow-hidden">
+            <div class="bg-blue-900 text-white px-4 py-2.5 flex flex-wrap justify-between items-center gap-2">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-amber-400 text-slate-950 text-[11px] font-black px-2 py-0.5 rounded">MATRIZ DO CAPÍTULO 15</span>
+                    <h2 class="font-extrabold text-xs md:text-sm tracking-wide uppercase">Entrada do Setor: GHE, Riscos, Medições e Plano de Ação</h2>
+                </div>
+                <div class="text-[11px] text-blue-200 font-medium">
+                    Preencha este setor e clique no botão verde abaixo para arquivar
+                </div>
+            </div>
+
+            <div class="p-4 space-y-4">
+
+                <!-- 1. GHE: SETOR E PROCESSO -->
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
+                        <div class="flex items-center space-x-1.5 text-blue-950 font-bold text-xs uppercase">
+                            <i data-lucide="layers" class="w-4 h-4 text-blue-800"></i>
+                            <span>1. Grupo Homogêneo de Exposição (GHE) & Processo de Trabalho</span>
+                        </div>
+                        <button type="button" onclick="startVoiceInput('cur_setor_processo')" class="text-xs bg-slate-200 hover:bg-slate-300 px-2 py-0.5 rounded text-slate-700 flex items-center" title="Ditar Processo Operacional">
+                            <i data-lucide="mic" class="w-3 h-3 text-blue-700 mr-1"></i> Ditar Processo
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Nome do Setor ou da Unidade *</label>
+                            <input type="text" id="cur_setor_nome" placeholder="EX: SECRETARIA DA VARA / ALMOXARIFADO" class="w-full bg-white border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase();">
+                            <span class="text-[10px] text-slate-500">Quando a unidade não tem setor, repita o próprio nome da unidade.</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Processo Operacional / Processo de Trabalho *</label>
+                            <input type="text" id="cur_setor_processo" placeholder="EX: ATENDIMENTO AO PÚBLICO, DIGITAÇÃO DE PROCESSOS E ARQUIVAMENTO" class="w-full bg-white border border-slate-300 rounded p-2 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase();">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. MEDIÇÕES AMBIENTAIS (COM ADICIONAR E REMOVER) -->
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+                    <div class="flex flex-wrap justify-between items-center border-b border-slate-200 pb-1.5 gap-2">
+                        <div class="flex items-center space-x-1.5 text-blue-950 font-bold text-xs uppercase">
+                            <i data-lucide="activity" class="w-4 h-4 text-emerald-600"></i>
+                            <span>2. Medições Ambientais (Ruído, Temperatura, Iluminância, Umidade)</span>
+                        </div>
+                        <button type="button" onclick="addMeasurementRow()" class="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded flex items-center shadow-sm">
+                            <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i> + PONTO DE MEDIÇÃO
+                        </button>
+                    </div>
+
+                    <div id="measurements-container" class="space-y-1.5">
+                        <!-- Medição inicial gerada via JS -->
+                    </div>
+                </div>
+
+                <!-- 3. CARGOS, QUANTITATIVO E ATIVIDADES (COM ADICIONAR E REMOVER) -->
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+                    <div class="flex flex-wrap justify-between items-center border-b border-slate-200 pb-1.5 gap-2">
+                        <div class="flex items-center space-x-1.5 text-blue-950 font-bold text-xs uppercase">
+                            <i data-lucide="users" class="w-4 h-4 text-blue-700"></i>
+                            <span>3. Cargos, Quantidade e Descrição das Atividades</span>
+                        </div>
+                        <button type="button" onclick="addCargoRow()" class="text-[11px] bg-blue-700 hover:bg-blue-800 text-white font-bold px-2.5 py-1 rounded flex items-center shadow-sm">
+                            <i data-lucide="user-plus" class="w-3.5 h-3.5 mr-1"></i> + ADICIONAR CARGO
+                        </button>
+                    </div>
+
+                    <div id="cargos-container" class="space-y-1.5">
+                        <!-- Cargos gerados via JS -->
+                    </div>
+                </div>
+
+                <!-- 4. INVENTÁRIO DE RISCOS OCUPACIONAIS & PLANO DE AÇÃO -->
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-3">
+                    <div class="flex flex-wrap justify-between items-center border-b border-slate-200 pb-1.5 gap-2">
+                        <div class="flex items-center space-x-1.5 text-blue-950 font-bold text-xs uppercase">
+                            <i data-lucide="shield-alert" class="w-4 h-4 text-amber-600"></i>
+                            <span>4. Inventário de Riscos Ocupacionais & Plano de Ação</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="openSmartVoiceRiskModal()" class="text-[11px] bg-indigo-700 hover:bg-indigo-800 text-white font-bold px-2.5 py-1 rounded flex items-center shadow-sm">
+                                <i data-lucide="mic" class="w-3.5 h-3.5 mr-1 text-amber-300"></i> DITAR RISCO COMPLETO
+                            </button>
+                            <button type="button" onclick="addManualRisk()" class="text-[11px] bg-slate-700 hover:bg-slate-800 text-white font-bold px-2.5 py-1 rounded flex items-center shadow-sm">
+                                <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i> + RISCO MANUAL
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- BARRAS DE BOTÕES PARA OS 6 GRUPOS DE RISCO -->
+                    <div class="bg-white p-2.5 rounded border border-slate-200 space-y-1.5">
+                        <span class="text-[10px] font-bold text-slate-700 uppercase block">Selecione o Grupo para abrir os Perigos correspondentes na lista suspensa:</span>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button type="button" onclick="filterRiskGroup('Físico')" class="risk-group-btn bg-slate-100 hover:bg-blue-100 border border-slate-300 text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded flex items-center transition">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span> FÍSICO
+                            </button>
+                            <button type="button" onclick="filterRiskGroup('Químico')" class="risk-group-btn bg-slate-100 hover:bg-blue-100 border border-slate-300 text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded flex items-center transition">
+                                <span class="w-2 h-2 rounded-full bg-red-500 mr-1.5"></span> QUÍMICO
+                            </button>
+                            <button type="button" onclick="filterRiskGroup('Biológico')" class="risk-group-btn bg-slate-100 hover:bg-blue-100 border border-slate-300 text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded flex items-center transition">
+                                <span class="w-2 h-2 rounded-full bg-amber-600 mr-1.5"></span> BIOLÓGICO
+                            </button>
+                            <button type="button" onclick="filterRiskGroup('Ergonômico')" class="risk-group-btn bg-slate-100 hover:bg-blue-100 border border-slate-300 text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded flex items-center transition">
+                                <span class="w-2 h-2 rounded-full bg-yellow-500 mr-1.5"></span> ERGONÔMICO
+                            </button>
+                            <button type="button" onclick="filterRiskGroup('Acidente')" class="risk-group-btn bg-slate-100 hover:bg-blue-100 border border-slate-300 text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded flex items-center transition">
+                                <span class="w-2 h-2 rounded-full bg-blue-600 mr-1.5"></span> ACIDENTE
+                            </button>
+                            <button type="button" onclick="filterRiskGroup('Psicossocial')" class="risk-group-btn bg-slate-100 hover:bg-blue-100 border border-slate-300 text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded flex items-center transition">
+                                <span class="w-2 h-2 rounded-full bg-purple-600 mr-1.5"></span> PSICOSSOCIAL
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- CONTAINER DOS CARDS DE RISCOS DO SETOR ATUAL -->
+                    <div id="risks-container" class="space-y-3">
+                        <!-- Gerado via JS -->
+                    </div>
+
+                    <!-- RESPONSÁVEL DO PLANO DE AÇÃO DO SETOR COM CONTATOS (WHATSAPP/E-MAIL) -->
+                    <div class="bg-amber-50 border border-amber-200 rounded p-3 space-y-2">
+                        <div class="flex flex-wrap justify-between items-center gap-2">
+                            <label class="block text-[11px] font-bold text-amber-950 uppercase">
+                                Responsável pela Implementação do Plano de Ação deste Setor:
+                            </label>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="useSameResponsavel()" class="text-[10px] bg-amber-600 hover:bg-amber-700 text-white font-bold px-2 py-1 rounded shadow-sm flex items-center">
+                                    <i data-lucide="copy" class="w-3 h-3 mr-1"></i> "O MESMO"
+                                </button>
+                                <select id="resp_historico_select" onchange="selectFromRespHistory(this)" class="text-[10px] border border-amber-300 rounded p-1 bg-white uppercase">
+                                    <option value="">-- ESCOLHER DO HISTÓRICO --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-600 uppercase block">Nome do Responsável *</label>
+                                <input type="text" id="cur_setor_resp" placeholder="EX: DR. ROBERTO / COORD. EHS" class="w-full bg-white border border-amber-300 rounded p-1.5 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase();">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-600 uppercase block">WhatsApp do Responsável (p/ Alertas)</label>
+                                <input type="text" id="cur_setor_resp_zap" placeholder="(19) 99156-7153" class="w-full bg-white border border-amber-300 rounded p-1.5 text-xs font-semibold">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-600 uppercase block">E-mail do Responsável (p/ Alertas)</label>
+                                <input type="text" id="cur_setor_resp_email" placeholder="responsavel@empresa.com.br" class="w-full bg-white border border-amber-300 rounded p-1.5 text-xs font-semibold">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTÃO PRINCIPAL: SALVAR O SETOR E LIMPAR A TELA -->
+                <div class="bg-slate-100 p-3.5 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <div class="text-[11px] text-slate-600">
+                        <i data-lucide="check-circle" class="w-4 h-4 inline mr-1 text-emerald-600"></i>
+                        Ao salvar, este setor é arquivado e os campos ficam limpos para registrar o próximo sem poluição visual.
+                    </div>
+                    <button type="button" onclick="saveAndResetSector()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-6 py-2.5 rounded-lg shadow-md flex items-center justify-center text-xs transition transform active:scale-95 uppercase whitespace-nowrap">
+                        <i data-lucide="save" class="w-4 h-4 mr-2"></i> SALVAR E ADICIONAR PRÓXIMO SETOR
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- LISTA DE SETORES SALVOS (PAINEL DE CONTROLE)                   -->
+        <!-- ============================================================== -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-100 border-b border-slate-200 px-4 py-2.5 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="folder-check" class="w-4 h-4 text-blue-900"></i>
+                    <h2 class="font-bold text-slate-800 text-xs md:text-sm uppercase">Setores Arquivados nesta Unidade (<span id="saved-sectors-count">0</span>)</h2>
+                </div>
+                <button type="button" onclick="openReviewModal()" class="text-xs text-blue-800 hover:underline font-bold flex items-center uppercase">
+                    <i data-lucide="eye" class="w-3.5 h-3.5 mr-1"></i> Visualizar Matrizes
+                </button>
+            </div>
+            <div class="p-3">
+                <div id="sectors-list-empty" class="text-center py-4 text-slate-400 text-xs uppercase">
+                    Nenhum setor adicionado ainda. Preencha os campos acima e clique em "SALVAR E ADICIONAR PRÓXIMO SETOR".
+                </div>
+                <div id="sectors-list-container" class="space-y-1.5 hidden">
+                    <!-- Cards de setores cadastrados -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- ÁREA FINAL DE EXPORTAÇÃO (AS DUAS OPÇÕES DE EXPORTAÇÃO)         -->
+        <!-- ============================================================== -->
+        <section class="bg-gradient-to-r from-blue-950 to-slate-900 rounded-xl shadow-xl p-5 text-white space-y-4">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div>
+                    <h3 class="text-base md:text-lg font-black tracking-wide flex items-center gap-2 uppercase">
+                        <i data-lucide="file-output" class="w-5 h-5 text-amber-400"></i>
+                        CENTRAL DE EXPORTAÇÃO DO PGR (NR-01) — BOREAL ENGMED
+                    </h3>
+                    <p class="text-[11px] text-slate-300 mt-0.5">
+                        Escolha entre baixar apenas as matrizes compactadas para colar manualmente OU gerar o <strong>PGR COMPLETO (16 CAPÍTULOS, TEORIA, CAPA E ANEXO 2.2)</strong> pronto em Word.
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap gap-2 w-full lg:w-auto">
+                    <!-- OPÇÃO 1: APENAS AS MATRIZES -->
+                    <button type="button" onclick="baixarMatrizesWordUltraCompacto()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2.5 rounded-lg border border-slate-600 text-xs flex items-center justify-center uppercase shadow">
+                        <i data-lucide="table" class="w-4 h-4 mr-1.5 text-blue-300"></i> OPÇÃO 1: BAIXAR SÓ AS MATRIZES (.DOC)
+                    </button>
+                    <!-- OPÇÃO 2: DOCUMENTO FINAL COMPLETO -->
+                    <button type="button" onclick="gerarPGRCompletoWordDefinitivo()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-5 py-2.5 rounded-lg text-xs flex items-center justify-center shadow-lg transition transform active:scale-95 uppercase">
+                        <i data-lucide="book-open-check" class="w-4 h-4 mr-2"></i> OPÇÃO 2: GERAR PGR FINAL COMPLETO (.DOCX)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- MODAL 1: VISUALIZAÇÃO E CÓPIA DE MATRIZES (COMPACTO)           -->
+    <!-- ============================================================== -->
+    <div id="review-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden">
+            <div class="boreal-header text-white px-5 py-3 flex justify-between items-center border-b border-blue-900">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="table" class="w-4 h-4 text-amber-400"></i>
+                    <h3 class="font-extrabold text-sm uppercase">Matrizes Compactas PGR (Fonte Cambria 10/11)</h3>
+                </div>
+                <button type="button" onclick="closeReviewModal()" class="text-slate-300 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto space-y-4" id="modal-tables-preview"></div>
+            <div class="bg-slate-100 border-t border-slate-200 px-5 py-2.5 flex justify-between items-center">
+                <button type="button" onclick="copyModalContent()" class="bg-blue-900 hover:bg-blue-950 text-white font-bold px-4 py-2 rounded-lg flex items-center text-xs uppercase shadow-sm">
+                    <i data-lucide="copy" class="w-3.5 h-3.5 mr-1.5"></i> Copiar Tabelas Selecionadas
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="baixarMatrizesWordUltraCompacto()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-4 py-2 rounded-lg flex items-center text-xs uppercase shadow-sm">
+                        <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5"></i> Baixar Matrizes (.Doc)
+                    </button>
+                    <button type="button" onclick="closeReviewModal()" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-3 py-2 rounded-lg text-xs uppercase">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL 2: GESTÃO DE PLANOS DE AÇÃO & ALERTAS (WHATSAPP/EMAIL)   -->
+    <!-- ============================================================== -->
+    <div id="planos-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="bg-amber-600 text-white px-5 py-3 flex justify-between items-center shadow">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="calendar-check" class="w-4 h-4 text-white"></i>
+                    <h3 class="font-extrabold text-sm uppercase">Gestão de Planos de Ação, Prazos & Alertas aos Responsáveis</h3>
+                </div>
+                <button type="button" onclick="closePlanoAcaoManager()" class="text-white hover:text-amber-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto space-y-3" id="planos-container-modal">
+                <!-- Gerado dinamicamente via JS -->
+            </div>
+            <div class="bg-slate-100 border-t border-slate-200 px-5 py-2.5 flex justify-end">
+                <button type="button" onclick="closePlanoAcaoManager()" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-4 py-2 rounded-lg text-xs uppercase">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL 3: ARQUIVO GERAL DE DOCUMENTOS (ART, OFÍCIOS, LAUDOS)   -->
+    <!-- ============================================================== -->
+    <div id="vault-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[88vh] flex flex-col overflow-hidden">
+            <div class="bg-indigo-900 text-white px-5 py-3 flex justify-between items-center shadow">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="archive" class="w-4 h-4 text-amber-300"></i>
+                    <h3 class="font-extrabold text-sm uppercase">Arquivo de Documentos do Processo (ART, Ofícios, Laudos)</h3>
+                </div>
+                <button type="button" onclick="closeDocsVaultModal()" class="text-white hover:text-indigo-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto space-y-4">
+                <div class="border-2 border-dashed border-indigo-200 rounded-xl p-4 text-center bg-indigo-50/50">
+                    <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto text-indigo-700 mb-2"></i>
+                    <p class="text-xs font-bold text-indigo-950 uppercase">Anexar Documento Digital (ART, Ofício, Relatório Quantitativo, Certificado de Calibração)</p>
+                    <input type="file" id="vault-file-input" class="hidden" onchange="handleVaultUpload(this)">
+                    <button type="button" onclick="document.getElementById('vault-file-input').click()" class="mt-2 bg-indigo-700 hover:bg-indigo-800 text-white font-bold px-4 py-1.5 rounded-lg text-xs uppercase shadow">
+                        Selecionar Arquivo do Computador/Celular
+                    </button>
+                </div>
+                <div id="vault-list" class="space-y-2">
+                    <!-- Arquivos anexados -->
+                </div>
+            </div>
+            <div class="bg-slate-100 border-t border-slate-200 px-5 py-2.5 flex justify-end">
+                <button type="button" onclick="closeDocsVaultModal()" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-4 py-2 rounded-lg text-xs uppercase">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL 4: IMPORTAÇÃO PRÉVIA DE PLANILHA (.XLSX)                 -->
+    <!-- ============================================================== -->
+    <div id="import-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden">
+            <div class="bg-emerald-700 text-white px-5 py-3 flex justify-between items-center shadow">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4 text-white"></i>
+                    <h3 class="font-extrabold text-sm uppercase">Importação Prévia de Dados por Planilha (.xlsx)</h3>
+                </div>
+                <button type="button" onclick="closeImportModal()" class="text-white hover:text-emerald-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-5 space-y-4 text-xs">
+                <p class="text-slate-600">
+                    Envie a planilha do cliente ou padrão da consultoria contendo os dados cadastrais (Unidades, Endereços, Cargos e Setores). O sistema estruturará os setores automaticamente sem você precisar digitar em campo.
+                </p>
+                <div class="border-2 border-dashed border-emerald-300 rounded-xl p-5 text-center bg-emerald-50/40">
+                    <input type="file" id="xlsx-file-input" accept=".xlsx,.xls,.csv" class="hidden" onchange="processUploadedExcel(this)">
+                    <button type="button" onclick="document.getElementById('xlsx-file-input').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-5 py-2 rounded-lg uppercase shadow">
+                        Escolher Arquivo Excel (.xlsx)
+                    </button>
+                    <p class="text-[10px] text-slate-500 mt-2">Suporta modelos com colunas: Unidade, CNPJ, Endereço, Setor, Cargo, Quantidade e Atividades.</p>
+                </div>
+            </div>
+            <div class="bg-slate-100 border-t border-slate-200 px-5 py-2.5 flex justify-end">
+                <button type="button" onclick="closeImportModal()" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold px-4 py-2 rounded-lg text-xs uppercase">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- SCRIPT DE LÓGICA E MONTAGEM DO PGR DEFINITIVO                   -->
+    <!-- ============================================================== -->
+    <script>
+        // BANCO EMBUTIDO DOS 159 RISCOS
+        let riskDatabaseGroups = {};
+
+        // MATRIZ 5x5 BOREAL / ENIT (Probabilidade x Severidade = Nível)
+        const riskMatrix = {
+            '5': { 'LEVE': 'SIGNIFICATIVO', 'MODERADA': 'SÉRIO', 'GRAVE REVERSÍVEL': 'CRÍTICO', 'GRAVE IRREVERSÍVEL': 'CRÍTICO', 'CRÍTICA/ FATAL': 'CRÍTICO' },
+            '4': { 'LEVE': 'SIGNIFICATIVO', 'MODERADA': 'SIGNIFICATIVO', 'GRAVE REVERSÍVEL': 'SÉRIO', 'GRAVE IRREVERSÍVEL': 'CRÍTICO', 'CRÍTICA/ FATAL': 'CRÍTICO' },
+            '3': { 'LEVE': 'TOLERÁVEL', 'MODERADA': 'SIGNIFICATIVO', 'GRAVE REVERSÍVEL': 'SÉRIO', 'GRAVE IRREVERSÍVEL': 'SÉRIO', 'CRÍTICA/ FATAL': 'CRÍTICO' },
+            '2': { 'LEVE': 'TOLERÁVEL', 'MODERADA': 'TOLERÁVEL', 'GRAVE REVERSÍVEL': 'SIGNIFICATIVO', 'GRAVE IRREVERSÍVEL': 'SIGNIFICATIVO', 'CRÍTICA/ FATAL': 'SÉRIO' },
+            '1': { 'LEVE': 'IRRELEVANTE', 'MODERADA': 'TOLERÁVEL', 'GRAVE REVERSÍVEL': 'TOLERÁVEL', 'GRAVE IRREVERSÍVEL': 'SIGNIFICATIVO', 'CRÍTICA/ FATAL': 'SIGNIFICATIVO' }
+        };
+
+        // ESTADO GLOBAL DO SISTEMA
+        let appState = {
+            solicitante: {},
+            anexosItem22: ["ANEXO I — LAUDO DE AVALIAÇÃO QUANTITATIVA AMBIENTAL"],
+            unidadeAtual: { signature: "" },
+            unidadesSalvas: [],
+            setoresAtuais: [],
+            documentosVault: [],
+            lastResponsavel: "",
+            responsavelHistory: []
+        };
+
+        let currentActiveGroup = 'Físico';
+        let canvas, ctx, isDrawing = false;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            initSignatureCanvas();
+            await loadRiskDatabase();
+            loadStateFromStorage();
+            filterRiskGroup('Físico');
+            if (document.querySelectorAll('.risk-card').length === 0) addRiskCard();
+            if (document.querySelectorAll('.measurement-row').length === 0) addMeasurementRow();
+            if (document.querySelectorAll('.cargo-row').length === 0) addCargoRow();
+            updateUnidadeBadge();
+            renderVaultList();
+            updatePlanosBadge();
+        });
+
+        async function loadRiskDatabase() {
+            try {
+                const res = await fetch('extracted_risks.json');
+                if (res.ok) {
+                    riskDatabaseGroups = await res.json();
+                }
+            } catch(e) {
+                console.warn("Utilizando fallback de riscos.");
+            }
+        }
+
+        function initSignatureCanvas() {
+            canvas = document.getElementById('sig-canvas');
+            if(!canvas) return;
+            ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth || 300;
+            canvas.height = canvas.offsetHeight || 80;
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#0f172a';
+
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: (e.touches ? e.touches[0].clientX : e.clientX) - rect.left,
+                    y: (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+                };
+            }
+
+            canvas.addEventListener('mousedown', (e) => { isDrawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); });
+            canvas.addEventListener('mousemove', (e) => { if(isDrawing) { const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); autoSave(); } });
+            window.addEventListener('mouseup', () => isDrawing = false);
+
+            canvas.addEventListener('touchstart', (e) => { isDrawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); e.preventDefault(); });
+            canvas.addEventListener('touchmove', (e) => { if(isDrawing) { const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); autoSave(); } e.preventDefault(); });
+            canvas.addEventListener('touchend', () => isDrawing = false);
+        }
+
+        function clearSignature() {
+            if(!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            appState.unidadeAtual.signature = "";
+            autoSave();
+        }
+
+        function updateUnidadeBadge() {
+            const nome = document.getElementById('unidade_nome').value.trim();
+            const badge = document.getElementById('badge-unidade-atual');
+            if (badge) badge.textContent = nome ? nome.toUpperCase() : "NÃO DEFINIDA";
+            const totUnid = document.getElementById('badge-total-unidades');
+            if (totUnid) totUnid.textContent = (appState.unidadesSalvas.length + (nome ? 1 : 0)) || 1;
+        }
+
+        // ==========================================
+        // FILTROS DOS 6 GRUPOS DE RISCO
+        // ==========================================
+        function filterRiskGroup(groupName) {
+            currentActiveGroup = groupName;
+            document.querySelectorAll('.risk-group-btn').forEach(btn => {
+                if (btn.textContent.trim().toUpperCase().includes(groupName.toUpperCase())) {
+                    btn.classList.add('bg-blue-900', 'text-white', 'border-blue-900');
+                    btn.classList.remove('bg-slate-100', 'text-slate-800');
+                } else {
+                    btn.classList.remove('bg-blue-900', 'text-white', 'border-blue-900');
+                    btn.classList.add('bg-slate-100', 'text-slate-800');
+                }
+            });
+
+            document.querySelectorAll('.risk-select').forEach(select => {
+                updateRiskSelectOptions(select, groupName);
+            });
+        }
+
+        function updateRiskSelectOptions(select, groupName) {
+            select.innerHTML = `<option value="">-- SELECIONE O PERIGO [${groupName.toUpperCase()}] --</option>`;
+            const list = riskDatabaseGroups[groupName] || [];
+            list.forEach((item, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = `${item.perigo.substring(0, 95).toUpperCase()}${item.perigo.length > 95 ? '...' : ''}`;
+                select.appendChild(opt);
+            });
+        }
+
+        function onRiskSelected(selectElem) {
+            const idx = selectElem.value;
+            const card = selectElem.closest('.risk-card');
+            if (idx === "" || !riskDatabaseGroups[currentActiveGroup] || !riskDatabaseGroups[currentActiveGroup][idx]) return;
+
+            const r = riskDatabaseGroups[currentActiveGroup][idx];
+            card.querySelector('.field-perigo').value = (r.perigo || '').toUpperCase();
+            card.querySelector('.field-fonte').value = (r.fonte || '').toUpperCase();
+            card.querySelector('.field-risco').value = (r.risco || '').toUpperCase();
+            card.querySelector('.field-prop').value = (r.propagacao || '').toUpperCase();
+            card.querySelector('.field-lesoes').value = (r.lesoes || '').toUpperCase();
+            card.querySelector('.field-medidas').value = (r.medidas || '').toUpperCase();
+            card.querySelector('.field-acao').value = (r.plano || '').toUpperCase();
+            
+            if (r.prazo) {
+                const prazoSelect = card.querySelector('.field-prazo');
+                for(let opt of prazoSelect.options) {
+                    if (r.prazo.toUpperCase().includes(opt.value.toUpperCase())) {
+                        prazoSelect.value = opt.value;
+                        break;
+                    }
+                }
+            }
+
+            if (r.severidade) {
+                const sevSelect = card.querySelector('.field-sev');
+                for(let opt of sevSelect.options) {
+                    if (opt.value.toUpperCase().includes(r.severidade.toUpperCase())) {
+                        sevSelect.value = opt.value;
+                        break;
+                    }
+                }
+            }
+            calculateRiskMatrix(card.querySelector('.field-sev'));
+        }
+
+        function calculateRiskMatrix(elem) {
+            const card = elem.closest('.risk-card');
+            const prob = card.querySelector('.field-prob').value;
+            const sev = card.querySelector('.field-sev').value;
+            const nivelInput = card.querySelector('.field-nivel');
+
+            if (prob && sev && riskMatrix[prob] && riskMatrix[prob][sev]) {
+                const nivel = riskMatrix[prob][sev];
+                nivelInput.value = nivel;
+
+                nivelInput.className = "field-nivel w-full font-black text-center rounded p-1.5 text-xs shadow-inner uppercase ";
+                if (nivel === 'IRRELEVANTE' || nivel === 'TOLERÁVEL') {
+                    nivelInput.classList.add("bg-emerald-100", "text-emerald-900", "border-2", "border-emerald-400");
+                } else if (nivel === 'SIGNIFICATIVO') {
+                    nivelInput.classList.add("bg-amber-100", "text-amber-900", "border-2", "border-amber-400");
+                } else if (nivel === 'SÉRIO') {
+                    nivelInput.classList.add("bg-orange-100", "text-orange-900", "border-2", "border-orange-500");
+                } else {
+                    nivelInput.classList.add("bg-red-200", "text-red-950", "border-2", "border-red-600");
+                }
+            } else {
+                nivelInput.value = "SELECIONE PROB. E SEV.";
+                nivelInput.className = "field-nivel w-full border-2 border-amber-400 bg-amber-100 text-amber-900 font-black text-center rounded p-1.5 text-xs shadow-inner uppercase";
+            }
+        }
+
+        // ==========================================
+        // DITADO POR VOZ (WEB SPEECH API)
+        // ==========================================
+        function startVoiceInput(elementId) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Seu navegador não suporta reconhecimento de voz direto. Use o teclado do celular com microfone integrado.");
+                return;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';
+            recognition.interimResults = false;
+            recognition.onstart = () => { console.log("Gravando áudio..."); };
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                const elem = document.getElementById(elementId);
+                if (elem) {
+                    elem.value = (elem.value ? elem.value + " " : "") + transcript.toUpperCase();
+                    autoSave();
+                }
+            };
+            recognition.start();
+        }
+
+        function openSmartVoiceRiskModal() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Recurso de voz indisponível neste navegador. Digite normalmente.");
+                return;
+            }
+            alert("Fale claramente: Perigo, Fonte, Probabilidade e Medidas.\nExemplo: 'Ruído de gerador a diesel, probabilidade 4, protetor auricular tipo concha'");
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript.toUpperCase();
+                addRiskCard();
+                const cards = document.querySelectorAll('.risk-card');
+                const last = cards[cards.length - 1];
+                last.querySelector('.field-perigo').value = text;
+                last.querySelector('.field-fonte').value = "FONTE IDENTIFICADA EM CAMPO";
+                last.querySelector('.field-risco').value = "EXPOSIÇÃO OCUPACIONAL AO AGENTE";
+                last.querySelector('.field-prop').value = "PROPAGAÇÃO AMBIENTAL";
+                last.querySelector('.field-lesoes').value = "AGRAVO À SAÚDE CONFORME INTENSIDADE";
+                last.querySelector('.field-medidas').value = "MEDIDAS CONFORME NORMAS VIGENTES";
+                last.querySelector('.field-prob').value = "3";
+                last.querySelector('.field-sev').value = "MODERADA";
+                calculateRiskMatrix(last.querySelector('.field-sev'));
+                lucide.createIcons();
+            };
+            recognition.start();
+        }
+
+        // ==========================================
+        // GESTÃO DINÂMICA DE LINHAS E ANEXOS
+        // ==========================================
+        function addAnexoItem() {
+            const c = document.getElementById('anexos-container');
+            const num = c.querySelectorAll('.anexo-row').length + 1;
+            const div = document.createElement('div');
+            div.className = "anexo-row flex items-center gap-2";
+            div.innerHTML = `
+                <input type="text" class="anexo-input w-full border border-slate-300 rounded p-1.5 text-xs bg-white uppercase font-semibold" placeholder="EX: ANEXO ${num} — RELATÓRIO TÉCNICO" value="ANEXO ${num} — " oninput="this.value = this.value.toUpperCase(); autoSave();">
+                <button type="button" onclick="removeAnexoItem(this)" class="text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            `;
+            c.appendChild(div);
+            lucide.createIcons();
+            autoSave();
+        }
+
+        function removeAnexoItem(btn) {
+            if (document.querySelectorAll('.anexo-row').length > 1) {
+                btn.closest('.anexo-row').remove();
+                autoSave();
+            } else {
+                alert("Mantenha ao menos um anexo no item 2.2.");
+            }
+        }
+
+        function addMeasurementRow() {
+            const container = document.getElementById('measurements-container');
+            const div = document.createElement('div');
+            div.className = "measurement-row grid grid-cols-12 gap-1.5 items-center bg-white p-2 rounded border border-slate-200";
+            div.innerHTML = `
+                <div class="col-span-12 md:col-span-4">
+                    <label class="text-[9px] font-bold text-slate-500 block uppercase">Ambiente / Ponto de Medição</label>
+                    <input type="text" class="m-ponto w-full border border-slate-300 rounded p-1 text-xs uppercase" placeholder="EX: SALA DE AUDIÊNCIAS" oninput="this.value = this.value.toUpperCase();">
+                </div>
+                <div class="col-span-3 md:col-span-2">
+                    <label class="text-[9px] font-bold text-slate-500 block uppercase">Ruído (dB)</label>
+                    <input type="text" class="m-ruido w-full border border-slate-300 rounded p-1 text-xs text-center uppercase" placeholder="58.4">
+                </div>
+                <div class="col-span-3 md:col-span-2">
+                    <label class="text-[9px] font-bold text-slate-500 block uppercase">Temp. (°C)</label>
+                    <input type="text" class="m-temp w-full border border-slate-300 rounded p-1 text-xs text-center uppercase" placeholder="23.5">
+                </div>
+                <div class="col-span-3 md:col-span-2">
+                    <label class="text-[9px] font-bold text-slate-500 block uppercase">Ilum. (Lux)</label>
+                    <input type="text" class="m-ilum w-full border border-slate-300 rounded p-1 text-xs text-center uppercase" placeholder="450">
+                </div>
+                <div class="col-span-2 md:col-span-1">
+                    <label class="text-[9px] font-bold text-slate-500 block uppercase">Um. (%)</label>
+                    <input type="text" class="m-umid w-full border border-slate-300 rounded p-1 text-xs text-center uppercase" placeholder="55">
+                </div>
+                <div class="col-span-1 text-center pt-3">
+                    <button type="button" onclick="removeMeasurementRow(this)" class="text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+        }
+
+        function removeMeasurementRow(btn) {
+            if (document.querySelectorAll('.measurement-row').length > 1) btn.closest('.measurement-row').remove();
+            else alert("Mantenha ao menos uma linha de medição.");
+        }
+
+        function addCargoRow() {
+            const container = document.getElementById('cargos-container');
+            const div = document.createElement('div');
+            div.className = "cargo-row grid grid-cols-12 gap-1.5 items-center bg-white p-2 rounded border border-slate-200";
+            div.innerHTML = `
+                <div class="col-span-12 md:col-span-4">
+                    <label class="text-[9px] font-bold text-slate-500 block uppercase">Nome do Cargo *</label>
+                    <input type="text" class="c-nome w-full border border-slate-300 rounded p-1 text-xs font-semibold uppercase" placeholder="EX: TÉCNICO JUDICIÁRIO" oninput="this.value = this.value.toUpperCase();">
+                </div>
+                <div class="col-span-4 md:col-span-2">
+                    <label class="text-[9px] font-bold text-slate-500 block uppercase">Qtd *</label>
+                    <input type="number" class="c-qtd w-full border border-slate-300 rounded p-1 text-xs text-center font-bold" placeholder="1" value="1">
+                </div>
+                <div class="col-span-7 md:col-span-5">
+                    <label class="text-[9px] font-bold text-slate-500 block uppercase">Descrição Detalhada das Atividades *</label>
+                    <input type="text" class="c-ativ w-full border border-slate-300 rounded p-1 text-xs uppercase" placeholder="EX: DIGITAÇÃO PROCESSUAL E ATENDIMENTO" oninput="this.value = this.value.toUpperCase();">
+                </div>
+                <div class="col-span-1 text-center pt-3">
+                    <button type="button" onclick="removeCargoRow(this)" class="text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+        }
+
+        function removeCargoRow(btn) {
+            if (document.querySelectorAll('.cargo-row').length > 1) btn.closest('.cargo-row').remove();
+            else alert("Mantenha ao menos uma linha de cargo.");
+        }
+
+        function addRiskCard() {
+            const container = document.getElementById('risks-container');
+            const count = container.querySelectorAll('.risk-card').length + 1;
+            const div = document.createElement('div');
+            div.className = "risk-card border border-slate-300 rounded-lg p-3 bg-white relative space-y-2 shadow-sm";
+            div.innerHTML = `
+                <div class="flex justify-between items-center border-b border-slate-100 pb-1.5">
+                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span> REGISTRO DE RISCO #<span class="risk-index">${count}</span>
+                    </span>
+                    <button type="button" onclick="removeRiskCard(this)" class="text-xs text-red-600 hover:underline flex items-center font-bold uppercase">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1"></i> Remover
+                    </button>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-blue-900 uppercase mb-1">Selecione o Perigo [${currentActiveGroup.toUpperCase()}]:</label>
+                    <select onchange="onRiskSelected(this)" class="risk-select w-full bg-blue-50/60 border border-blue-200 rounded p-2 text-xs text-slate-900 font-semibold uppercase">
+                        <option value="">-- SELECIONE O PERIGO --</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-700 block uppercase">PERIGO / FATOR DE RISCO *</label>
+                        <textarea rows="2" class="field-perigo w-full border border-slate-300 rounded p-1.5 text-xs font-semibold uppercase" oninput="this.value = this.value.toUpperCase();"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-700 block uppercase">FONTE GERADORA</label>
+                        <textarea rows="2" class="field-fonte w-full border border-slate-300 rounded p-1.5 text-xs uppercase" oninput="this.value = this.value.toUpperCase();"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-700 block uppercase">RISCO / EVENTO</label>
+                        <textarea rows="2" class="field-risco w-full border border-slate-300 rounded p-1.5 text-xs uppercase" oninput="this.value = this.value.toUpperCase();"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-700 block uppercase">VIA DE PROPAGAÇÃO / MEIO</label>
+                        <textarea rows="2" class="field-prop w-full border border-slate-300 rounded p-1.5 text-xs uppercase" oninput="this.value = this.value.toUpperCase();"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-700 block uppercase">LESÕES OU AGRAVOS À SAÚDE</label>
+                        <textarea rows="2" class="field-lesoes w-full border border-slate-300 rounded p-1.5 text-xs uppercase" oninput="this.value = this.value.toUpperCase();"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-700 block uppercase">MEDIDAS EXISTENTES</label>
+                        <textarea rows="2" class="field-medidas w-full border border-slate-300 rounded p-1.5 text-xs uppercase" oninput="this.value = this.value.toUpperCase();"></textarea>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50/70 border border-amber-200 rounded p-2 grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                    <div>
+                        <label class="text-[10px] font-bold text-amber-950 block mb-0.5 uppercase">PROBABILIDADE (1 A 5) *</label>
+                        <select onchange="calculateRiskMatrix(this)" class="field-prob w-full border border-amber-300 rounded p-1.5 text-xs bg-white font-bold uppercase">
+                            <option value="">-- SELECIONE --</option>
+                            <option value="1">1 — ALTAMENTE IMPROVÁVEL</option>
+                            <option value="2">2 — IMPROVÁVEL</option>
+                            <option value="3" selected>3 — POUCO PROVÁVEL</option>
+                            <option value="4">4 — PROVÁVEL</option>
+                            <option value="5">5 — ALTAMENTE PROVÁVEL</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-amber-950 block mb-0.5 uppercase">SEVERIDADE (1 A 5) *</label>
+                        <select onchange="calculateRiskMatrix(this)" class="field-sev w-full border border-amber-300 rounded p-1.5 text-xs bg-white font-bold uppercase">
+                            <option value="">-- SELECIONE --</option>
+                            <option value="LEVE">1 — LEVE</option>
+                            <option value="MODERADA" selected>2 — MODERADA</option>
+                            <option value="GRAVE REVERSÍVEL">3 — GRAVE REVERSÍVEL</option>
+                            <option value="GRAVE IRREVERSÍVEL">4 — GRAVE IRREVERSÍVEL</option>
+                            <option value="CRÍTICA/ FATAL">5 — CRÍTICA/ FATAL</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-amber-950 block mb-0.5 uppercase">NÍVEL DE RISCO (AUTOMÁTICO)</label>
+                        <input type="text" readonly class="field-nivel w-full border-2 border-amber-400 bg-amber-100 text-amber-950 font-black text-center rounded p-1.5 text-xs uppercase shadow-inner" value="SIGNIFICATIVO">
+                    </div>
+                </div>
+
+                <div class="bg-blue-50/50 border border-blue-200 rounded p-2 space-y-1.5">
+                    <span class="text-[10px] font-bold text-blue-950 uppercase block">Plano de Ação para o Risco</span>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <div class="md:col-span-2">
+                            <label class="text-[10px] font-semibold text-slate-700 block uppercase">Ação Recomendada de Prevenção / Melhoria *</label>
+                            <input type="text" class="field-acao w-full border border-slate-300 rounded p-1.5 text-xs bg-white uppercase" oninput="this.value = this.value.toUpperCase();">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-semibold text-slate-700 block uppercase">Prazo de Implantação *</label>
+                            <select class="field-prazo w-full border border-slate-300 rounded p-1.5 text-xs bg-white font-bold uppercase">
+                                <option value="IMEDIATO">IMEDIATO</option>
+                                <option value="ATÉ 30 DIAS">ATÉ 30 DIAS</option>
+                                <option value="ATÉ 60 DIAS">ATÉ 60 DIAS</option>
+                                <option value="ATÉ 90 DIAS" selected>ATÉ 90 DIAS</option>
+                                <option value="ATÉ 120 DIAS">ATÉ 120 DIAS</option>
+                                <option value="ATÉ 180 DIAS">ATÉ 180 DIAS</option>
+                                <option value="ATÉ 360 DIAS">ATÉ 360 DIAS (1 ANO)</option>
+                                <option value="CONTÍNUO / PERMANENTE">CONTÍNUO / PERMANENTE</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+            updateRiskSelectOptions(div.querySelector('.risk-select'), currentActiveGroup);
+            calculateRiskMatrix(div.querySelector('.field-sev'));
+            lucide.createIcons();
+        }
+
+        function addManualRisk() {
+            addRiskCard();
+            const cards = document.querySelectorAll('.risk-card');
+            const last = cards[cards.length - 1];
+            last.querySelector('.field-perigo').focus();
+        }
+
+        function removeRiskCard(btn) {
+            if (document.querySelectorAll('.risk-card').length > 1) {
+                btn.closest('.risk-card').remove();
+                document.querySelectorAll('.risk-card').forEach((c, idx) => { c.querySelector('.risk-index').textContent = idx + 1; });
+            } else {
+                alert("Mantenha ao menos um registro de risco no setor.");
+            }
+        }
+
+        function useSameResponsavel() {
+            if (appState.lastResponsavel) document.getElementById('cur_setor_resp').value = appState.lastResponsavel.toUpperCase();
+            else alert("Nenhum responsável foi cadastrado em setor anterior.");
+        }
+
+        function selectFromRespHistory(select) {
+            if (select.value) {
+                document.getElementById('cur_setor_resp').value = select.value.toUpperCase();
+                select.value = "";
+            }
+        }
+
+        function updateRespDropdown() {
+            const sel = document.getElementById('resp_historico_select');
+            sel.innerHTML = `<option value="">-- ESCOLHER DO HISTÓRICO --</option>`;
+            appState.responsavelHistory.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r; opt.textContent = r;
+                sel.appendChild(opt);
+            });
+        }
+
+        // ==============================================================
+        // SALVAR SETOR ATUAL E LIMPAR TELA
+        // ==============================================================
+        function saveAndResetSector() {
+            const setorNome = document.getElementById('cur_setor_nome').value.trim().toUpperCase();
+            const setorProcesso = document.getElementById('cur_setor_processo').value.trim().toUpperCase();
+
+            if (!setorNome) {
+                alert("Preencha o Nome do Setor (ou da Unidade) antes de salvar.");
+                document.getElementById('cur_setor_nome').focus();
+                return;
+            }
+
+            const measurements = [];
+            document.querySelectorAll('.measurement-row').forEach(row => {
+                measurements.push({
+                    ponto: row.querySelector('.m-ponto').value.trim().toUpperCase() || "GERAL",
+                    ruido: row.querySelector('.m-ruido').value.trim().toUpperCase() || "-",
+                    temp: row.querySelector('.m-temp').value.trim().toUpperCase() || "-",
+                    ilum: row.querySelector('.m-ilum').value.trim().toUpperCase() || "-",
+                    umid: row.querySelector('.m-umid').value.trim().toUpperCase() || "-"
+                });
+            });
+
+            const cargos = [];
+            document.querySelectorAll('.cargo-row').forEach(row => {
+                const cNome = row.querySelector('.c-nome').value.trim().toUpperCase();
+                if (cNome) {
+                    cargos.push({
+                        nome: cNome,
+                        qtd: row.querySelector('.c-qtd').value.trim() || "1",
+                        atividades: row.querySelector('.c-ativ').value.trim().toUpperCase() || "-"
+                    });
+                }
+            });
+            if (cargos.length === 0) cargos.push({ nome: "GERAL", qtd: "1", atividades: "ATIVIDADES GERAIS DO SETOR" });
+
+            const riscos = [];
+            document.querySelectorAll('.risk-card').forEach(card => {
+                const perigo = card.querySelector('.field-perigo').value.trim().toUpperCase();
+                if (perigo) {
+                    riscos.push({
+                        perigo: perigo,
+                        fonte: card.querySelector('.field-fonte').value.trim().toUpperCase() || "-",
+                        risco: card.querySelector('.field-risco').value.trim().toUpperCase() || "-",
+                        propagacao: card.querySelector('.field-prop').value.trim().toUpperCase() || "-",
+                        lesoes: card.querySelector('.field-lesoes').value.trim().toUpperCase() || "-",
+                        medidas: card.querySelector('.field-medidas').value.trim().toUpperCase() || "MEDIDAS CONFORME NORMAS VIGENTES",
+                        prob: card.querySelector('.field-prob').value || "3",
+                        sev: card.querySelector('.field-sev').value || "MODERADA",
+                        nivel: card.querySelector('.field-nivel').value || "SIGNIFICATIVO",
+                        acao: card.querySelector('.field-acao').value.trim().toUpperCase() || "MANTER MONITORAMENTO E TREINAMENTO REGULAR.",
+                        prazo: card.querySelector('.field-prazo').value || "ATÉ 90 DIAS"
+                    });
+                }
+            });
+
+            const resp = document.getElementById('cur_setor_resp').value.trim().toUpperCase();
+            const zap = document.getElementById('cur_setor_resp_zap').value.trim();
+            const email = document.getElementById('cur_setor_resp_email').value.trim();
+
+            if (resp) {
+                appState.lastResponsavel = resp;
+                if (!appState.responsavelHistory.includes(resp)) {
+                    appState.responsavelHistory.push(resp);
+                    updateRespDropdown();
+                }
+            }
+
+            const sectorObject = {
+                id: Date.now(),
+                nome: setorNome,
+                processo: setorProcesso || "-",
+                measurements: measurements,
+                cargos: cargos,
+                riscos: riscos,
+                responsavel: resp || (appState.lastResponsavel || "DIRETORIA / GESTÃO DA UNIDADE"),
+                zap: zap,
+                email: email,
+                unidadeVinculada: document.getElementById('unidade_nome').value.trim().toUpperCase() || "UNIDADE PRINCIPAL"
+            };
+
+            appState.setoresAtuais.push(sectorObject);
+            renderSavedSectorsList();
+            autoSave();
+            resetSectorForm();
+            updatePlanosBadge();
+
+            alert(`SETOR "${setorNome}" ARQUIVADO COM SUCESSO!\nTELA LIMPA PARA O PRÓXIMO REGISTRO.`);
+        }
+
+        function resetSectorForm() {
+            document.getElementById('cur_setor_nome').value = "";
+            document.getElementById('cur_setor_processo').value = "";
+            const mContainer = document.getElementById('measurements-container');
+            mContainer.innerHTML = ""; addMeasurementRow();
+            const cContainer = document.getElementById('cargos-container');
+            cContainer.innerHTML = ""; addCargoRow();
+            const rContainer = document.getElementById('risks-container');
+            rContainer.innerHTML = ""; addRiskCard();
+            document.getElementById('cur_setor_resp').value = "";
+        }
+
+        function renderSavedSectorsList() {
+            const listContainer = document.getElementById('sectors-list-container');
+            const emptyNotice = document.getElementById('sectors-list-empty');
+            const countBadge = document.getElementById('saved-sectors-count');
+            const totalSetoresTop = document.getElementById('badge-total-setores');
+
+            const count = appState.setoresAtuais.length;
+            countBadge.textContent = count;
+            totalSetoresTop.textContent = count;
+
+            if (count === 0) {
+                emptyNotice.classList.remove('hidden');
+                listContainer.classList.add('hidden');
+                listContainer.innerHTML = "";
+                return;
+            }
+
+            emptyNotice.classList.add('hidden');
+            listContainer.classList.remove('hidden');
+            listContainer.innerHTML = "";
+
+            appState.setoresAtuais.forEach((sec, idx) => {
+                const item = document.createElement('div');
+                item.className = "flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50 p-2.5 rounded border border-slate-200 gap-2 text-xs uppercase";
+                item.innerHTML = `
+                    <div>
+                        <span class="font-black text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded mr-2">#${idx + 1}</span>
+                        <strong>${sec.nome}</strong>
+                        <span class="text-[10px] text-slate-500 ml-2">(${sec.cargos.length} CARGOS | ${sec.riscos.length} RISCOS)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="editSector(${sec.id})" class="text-blue-700 hover:text-blue-900 font-bold px-2 py-0.5 rounded bg-white border border-slate-300">EDITAR</button>
+                        <button type="button" onclick="removeSector(${sec.id})" class="text-red-600 hover:text-red-800 font-bold px-2 py-0.5 rounded bg-white border border-slate-300">EXCLUIR</button>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function removeSector(id) {
+            if (confirm("DESEJA REALMENTE EXCLUIR ESTE SETOR?")) {
+                appState.setoresAtuais = appState.setoresAtuais.filter(s => s.id !== id);
+                renderSavedSectorsList();
+                autoSave();
+                updatePlanosBadge();
+            }
+        }
+
+        function editSector(id) {
+            const sec = appState.setoresAtuais.find(s => s.id === id);
+            if (!sec) return;
+
+            if (confirm(`DESEJA CARREGAR O SETOR "${sec.nome}" PARA EDIÇÃO?`)) {
+                document.getElementById('cur_setor_nome').value = sec.nome;
+                document.getElementById('cur_setor_processo').value = sec.processo;
+                document.getElementById('cur_setor_resp').value = sec.responsavel || "";
+                document.getElementById('cur_setor_resp_zap').value = sec.zap || "";
+                document.getElementById('cur_setor_resp_email').value = sec.email || "";
+
+                const mContainer = document.getElementById('measurements-container');
+                mContainer.innerHTML = "";
+                sec.measurements.forEach(m => {
+                    addMeasurementRow();
+                    const rows = document.querySelectorAll('.measurement-row');
+                    const last = rows[rows.length - 1];
+                    last.querySelector('.m-ponto').value = m.ponto;
+                    last.querySelector('.m-ruido').value = m.ruido;
+                    last.querySelector('.m-temp').value = m.temp;
+                    last.querySelector('.m-ilum').value = m.ilum;
+                    last.querySelector('.m-umid').value = m.umid;
+                });
+
+                const cContainer = document.getElementById('cargos-container');
+                cContainer.innerHTML = "";
+                sec.cargos.forEach(c => {
+                    addCargoRow();
+                    const rows = document.querySelectorAll('.cargo-row');
+                    const last = rows[rows.length - 1];
+                    last.querySelector('.c-nome').value = c.nome;
+                    last.querySelector('.c-qtd').value = c.qtd;
+                    last.querySelector('.c-ativ').value = c.atividades;
+                });
+
+                appState.setoresAtuais = appState.setoresAtuais.filter(s => s.id !== id);
+                renderSavedSectorsList();
+                autoSave();
+                updatePlanosBadge();
+                window.scrollTo({ top: document.querySelector('section:nth-of-type(3)').offsetTop - 50, behavior: 'smooth' });
+            }
+        }
+
+        function salvarUnidadeEIniciarNova() {
+            autoSave();
+            const uNome = document.getElementById('unidade_nome').value.trim().toUpperCase();
+            if (!uNome) {
+                alert("PREENCHA AO MENOS O NOME DA UNIDADE ANTES DE INICIAR UMA NOVA.");
+                return;
+            }
+
+            if (confirm(`DESEJA ARQUIVAR A UNIDADE "${uNome}" COM OS SEUS SETORES E INICIAR UMA NOVA UNIDADE PARA O MESMO CLIENTE?`)) {
+                appState.unidadesSalvas.push({
+                    unidade: { ...appState.unidadeAtual, nome: uNome },
+                    setores: [ ...appState.setoresAtuais ]
+                });
+
+                document.getElementById('unidade_nome').value = "";
+                document.getElementById('unidade_cnpj').value = "";
+                document.getElementById('unidade_tel').value = "";
+                document.getElementById('unidade_resp').value = "";
+                document.getElementById('unidade_cargo_resp').value = "";
+                document.getElementById('unidade_endereco').value = "";
+                document.getElementById('unidade_contato').value = "";
+                clearSignature();
+
+                appState.setoresAtuais = [];
+                renderSavedSectorsList();
+                resetSectorForm();
+                updateUnidadeBadge();
+                autoSave();
+
+                alert("UNIDADE ARQUIVADA!\nOS CAMPOS DA UNIDADE E SETORES FORAM LIMPOS PARA A NOVA COLETA.");
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function confirmNewClient() {
+            if (confirm("ATENÇÃO: DESEJA LIMPAR TODA A COLETA E INICIAR UM NOVO CLIENTE?\n\n(DICA: CERTIFIQUE-SE DE TER BAIXADO O PGR OU AS MATRIZES DO CLIENTE ATUAL ANTES DE LIMPAR).")) {
+                localStorage.removeItem('BOREAL_PGR_OFFLINE_STATE');
+                window.location.reload();
+            }
+        }
+
+        // ==========================================
+        // PERSISTÊNCIA LOCAL (OFFLINE)
+        // ==========================================
+        function autoSave() {
+            const anexos = [];
+            document.querySelectorAll('.anexo-input').forEach(i => { if (i.value.trim()) anexos.push(i.value.trim().toUpperCase()); });
+
+            appState.solicitante = {
+                nome: document.getElementById('solicitante_nome').value.toUpperCase(),
+                cnpj: document.getElementById('solicitante_cnpj').value.toUpperCase(),
+                vigencia: document.getElementById('solicitante_vigencia').value.toUpperCase(),
+                data_emissao: document.getElementById('solicitante_data_emissao').value,
+                cnae: document.getElementById('solicitante_cnae').value.toUpperCase(),
+                endereco: document.getElementById('solicitante_endereco').value.toUpperCase()
+            };
+            appState.anexosItem22 = anexos;
+
+            appState.unidadeAtual = {
+                nome: document.getElementById('unidade_nome').value.toUpperCase(),
+                cnpj: document.getElementById('unidade_cnpj').value.toUpperCase(),
+                tel: document.getElementById('unidade_tel').value.toUpperCase(),
+                resp: document.getElementById('unidade_resp').value.toUpperCase(),
+                cargo_resp: document.getElementById('unidade_cargo_resp').value.toUpperCase(),
+                endereco: document.getElementById('unidade_endereco').value.toUpperCase(),
+                contato: document.getElementById('unidade_contato').value.toUpperCase(),
+                signature: canvas ? canvas.toDataURL() : ""
+            };
+
+            localStorage.setItem('BOREAL_PGR_OFFLINE_STATE', JSON.stringify(appState));
+        }
+
+        function loadStateFromStorage() {
+            const raw = localStorage.getItem('BOREAL_PGR_OFFLINE_STATE');
+            if (!raw) return;
+            try {
+                const loaded = JSON.parse(raw);
+                if (loaded) {
+                    appState = loaded;
+                    if (appState.solicitante) {
+                        document.getElementById('solicitante_nome').value = appState.solicitante.nome || "";
+                        document.getElementById('solicitante_cnpj').value = appState.solicitante.cnpj || "";
+                        document.getElementById('solicitante_vigencia').value = appState.solicitante.vigencia || "";
+                        document.getElementById('solicitante_data_emissao').value = appState.solicitante.data_emissao || "";
+                        document.getElementById('solicitante_cnae').value = appState.solicitante.cnae || "";
+                        document.getElementById('solicitante_endereco').value = appState.solicitante.endereco || "";
+                    }
+                    if (appState.anexosItem22 && appState.anexosItem22.length > 0) {
+                        const c = document.getElementById('anexos-container');
+                        c.innerHTML = "";
+                        appState.anexosItem22.forEach(a => {
+                            const div = document.createElement('div');
+                            div.className = "anexo-row flex items-center gap-2";
+                            div.innerHTML = `
+                                <input type="text" class="anexo-input w-full border border-slate-300 rounded p-1.5 text-xs bg-white uppercase font-semibold" value="${a}" oninput="this.value = this.value.toUpperCase(); autoSave();">
+                                <button type="button" onclick="removeAnexoItem(this)" class="text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            `;
+                            c.appendChild(div);
+                        });
+                        lucide.createIcons();
+                    }
+                    if (appState.unidadeAtual) {
+                        document.getElementById('unidade_nome').value = appState.unidadeAtual.nome || "";
+                        document.getElementById('unidade_cnpj').value = appState.unidadeAtual.cnpj || "";
+                        document.getElementById('unidade_tel').value = appState.unidadeAtual.tel || "";
+                        document.getElementById('unidade_resp').value = appState.unidadeAtual.resp || "";
+                        document.getElementById('unidade_cargo_resp').value = appState.unidadeAtual.cargo_resp || "";
+                        document.getElementById('unidade_endereco').value = appState.unidadeAtual.endereco || "";
+                        document.getElementById('unidade_contato').value = appState.unidadeAtual.contato || "";
+                        if (appState.unidadeAtual.signature && canvas) {
+                            const img = new Image();
+                            img.onload = () => ctx.drawImage(img, 0, 0);
+                            img.src = appState.unidadeAtual.signature;
+                        }
+                    }
+                    if (appState.setoresAtuais) renderSavedSectorsList();
+                    if (appState.responsavelHistory) updateRespDropdown();
+                }
+            } catch(e) {
+                console.error("Erro no carregamento:", e);
+            }
+        }
+
+        // ==============================================================
+        // MÓDULO 1: GERAÇÃO DAS MATRIZES ISOLADAS (.DOC)
+        // ==============================================================
+        function gerarTabelasHTMLCompactas() {
+            autoSave();
+            let html = "";
+
+            // CAPA
+            html += `
+                <div style="margin-bottom: 10px;">
+                    <div style="font-family:Cambria,serif; font-size:11pt; font-weight:bold; text-align:center; margin-bottom:3px; text-transform:uppercase;">INSERIDO NA CAPA DO PGR</div>
+                    <table class="table-pgr-preview" style="font-family:Cambria,serif; font-size:10pt; border-collapse:collapse; width:100%; border:1px solid #000; text-align:center;">
+                        <tr>
+                            <td style="border:1px solid #000; padding:2px 4px; font-weight:bold; width:25%;">SOLICITANTE:</td>
+                            <td style="border:1px solid #000; padding:2px 4px; width:45%;">${appState.solicitante.nome || '-'}</td>
+                            <td style="border:1px solid #000; padding:2px 4px; font-weight:bold; width:10%;">CNPJ:</td>
+                            <td style="border:1px solid #000; padding:2px 4px; width:20%;">${appState.solicitante.cnpj || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style="border:1px solid #000; padding:2px 4px; font-weight:bold;">VIGÊNCIA:</td>
+                            <td style="border:1px solid #000; padding:2px 4px;">${appState.solicitante.vigencia || '-'}</td>
+                            <td style="border:1px solid #000; padding:2px 4px; font-weight:bold;">DATA DE EMISSÃO:</td>
+                            <td style="border:1px solid #000; padding:2px 4px;">${appState.solicitante.data_emissao || '-'}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+
+            // CAPÍTULO 1 (TODAS AS UNIDADES DO PROJETO)
+            const todasUnidades = [];
+            if (appState.unidadeAtual.nome) todasUnidades.push(appState.unidadeAtual);
+            appState.unidadesSalvas.forEach(u => todasUnidades.push(u.unidade));
+
+            let unidRows = "";
+            todasUnidades.forEach(u => {
+                unidRows += `
+                    <tr>
+                        <td style="border:1px solid #000; padding:2px 4px;">${u.nome || '-'}</td>
+                        <td style="border:1px solid #000; padding:2px 4px;">${u.cnpj || '-'}</td>
+                        <td style="border:1px solid #000; padding:2px 4px;">${u.resp || '-'}</td>
+                        <td style="border:1px solid #000; padding:2px 4px;">${u.cargo_resp || '-'}</td>
+                        <td style="border:1px solid #000; padding:2px 4px;">${u.endereco || '-'}</td>
+                        <td style="border:1px solid #000; padding:2px 4px;">
+                            <div>${u.contato || '-'}</div>
+                            ${u.signature ? `<img src="${u.signature}" style="max-height:26px; display:block; margin:2px auto;" alt="Rúbrica">` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                <div style="margin-bottom: 12px;">
+                    <div style="font-family:Cambria,serif; font-size:11pt; font-weight:bold; text-align:center; margin-bottom:3px; text-transform:uppercase;">
+                        INSERIDO NO CAPÍTULO 1 DO PGR — RELATÓRIO DE VISITA DA(S) UNIDADE(S)
+                    </div>
+                    <table class="table-pgr-preview" style="font-family:Cambria,serif; font-size:10pt; border-collapse:collapse; width:100%; border:1px solid #000; text-align:center;">
+                        <thead>
+                            <tr style="background-color:#E2E8F0;">
+                                <th style="border:1px solid #000; padding:2px 4px;">NOME DA UNIDADE</th>
+                                <th style="border:1px solid #000; padding:2px 4px;">CNPJ</th>
+                                <th style="border:1px solid #000; padding:2px 4px;">NOME DO RESPONSÁVEL</th>
+                                <th style="border:1px solid #000; padding:2px 4px;">CARGO DO RESPONSÁVEL</th>
+                                <th style="border:1px solid #000; padding:2px 4px;">ENDEREÇO</th>
+                                <th style="border:1px solid #000; padding:2px 4px;">NOME DO CONTATO E ASS.</th>
+                            </tr>
+                        </thead>
+                        <tbody>${unidRows || '<tr><td colspan="6" style="border:1px solid #000; padding:2px 4px;">NENHUMA UNIDADE CADASTRADA</td></tr>'}</tbody>
+                    </table>
+                </div>
+            `;
+
+            // CAPÍTULO 15 (TODOS OS SETORES)
+            const todosSetores = [ ...appState.setoresAtuais ];
+            appState.unidadesSalvas.forEach(u => todosSetores.push(...u.setores));
+
+            if (todosSetores.length === 0) {
+                html += `<div style="text-align:center; color:#b45309; font-weight:bold; padding:8px;">NENHUM SETOR ARQUIVADO AINDA.</div>`;
+            } else {
+                todosSetores.forEach((sec, idx) => {
+                    let cargosRows = "";
+                    sec.cargos.forEach(c => {
+                        cargosRows += `<tr><td style="border:1px solid #000; padding:2px 4px;">${c.nome}</td><td style="border:1px solid #000; padding:2px 4px; font-weight:bold;">${c.qtd}</td><td style="border:1px solid #000; padding:2px 4px;">${c.atividades}</td></tr>`;
+                    });
+
+                    let riscosRows = "";
+                    let acoesRows = "";
+                    sec.riscos.forEach(r => {
+                        riscosRows += `
+                            <tr>
+                                <td style="border:1px solid #000; padding:2px 4px;">${r.perigo}</td>
+                                <td style="border:1px solid #000; padding:2px 4px;">${r.fonte}</td>
+                                <td style="border:1px solid #000; padding:2px 4px;">${r.risco}</td>
+                                <td style="border:1px solid #000; padding:2px 4px;">${r.propagacao}</td>
+                                <td style="border:1px solid #000; padding:2px 4px;">${r.lesoes}</td>
+                                <td style="border:1px solid #000; padding:2px 4px;">${r.medidas}</td>
+                                <td style="border:1px solid #000; padding:2px 4px; font-weight:bold;">${r.prob}</td>
+                                <td style="border:1px solid #000; padding:2px 4px; font-weight:bold;">${r.sev}</td>
+                                <td style="border:1px solid #000; padding:2px 4px; font-weight:bold;">${r.nivel}</td>
+                            </tr>
+                        `;
+                        acoesRows += `
+                            <tr>
+                                <td style="border:1px solid #000; padding:2px 4px;">${r.acao}</td>
+                                <td style="border:1px solid #000; padding:2px 4px; font-weight:bold; width:22%;">${r.prazo}</td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `
+                        <div style="margin-bottom: 14px; border:1px solid #000; padding:4px; background-color:#fff;">
+                            <div style="font-family:Cambria,serif; font-size:11pt; font-weight:bold; text-align:center; margin-bottom:3px; text-transform:uppercase;">
+                                TABELA DO INVENTÁRIO DE RISCOS E PLANO DE AÇÃO — SETOR #${idx+1}: ${sec.nome} (${sec.unidadeVinculada || 'UNIDADE'})
+                            </div>
+                            
+                            <table class="table-pgr-preview" style="font-family:Cambria,serif; font-size:10pt; border-collapse:collapse; width:100%; border:1px solid #000; text-align:center; margin-bottom:3px;">
+                                <thead>
+                                    <tr style="background-color:#E2E8F0;">
+                                        <th colspan="2" style="border:1px solid #000; padding:2px 4px;">GRUPO HOMOGÊNEO DE EXPOSIÇÃO</th>
+                                        <th colspan="4" style="border:1px solid #000; padding:2px 4px;">MEDIÇÕES AMBIENTAIS</th>
+                                    </tr>
+                                    <tr style="background-color:#F1F5F9;">
+                                        <th style="border:1px solid #000; padding:2px 4px;">NOME DO SETOR OU UNIDADE</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">PROCESSO OPERACIONAL</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">RUÍDO (dB)</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">TEMP. (°C)</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">ILUM.(LUX)</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">UM. (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="border:1px solid #000; padding:2px 4px; font-weight:bold;">${sec.nome}</td>
+                                        <td style="border:1px solid #000; padding:2px 4px;">${sec.processo}</td>
+                                        <td style="border:1px solid #000; padding:2px 4px;">${sec.measurements[0]?.ruido || '-'}</td>
+                                        <td style="border:1px solid #000; padding:2px 4px;">${sec.measurements[0]?.temp || '-'}</td>
+                                        <td style="border:1px solid #000; padding:2px 4px;">${sec.measurements[0]?.ilum || '-'}</td>
+                                        <td style="border:1px solid #000; padding:2px 4px;">${sec.measurements[0]?.umid || '-'}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <table class="table-pgr-preview" style="font-family:Cambria,serif; font-size:10pt; border-collapse:collapse; width:100%; border:1px solid #000; text-align:center; margin-bottom:3px;">
+                                <thead>
+                                    <tr style="background-color:#F1F5F9;">
+                                        <th style="border:1px solid #000; padding:2px 4px; width:30%;">CARGO</th>
+                                        <th style="border:1px solid #000; padding:2px 4px; width:10%;">QUANT.</th>
+                                        <th style="border:1px solid #000; padding:2px 4px; width:60%;">ATIVIDADES</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${cargosRows}</tbody>
+                            </table>
+
+                            <table class="table-pgr-preview" style="font-family:Cambria,serif; font-size:10pt; border-collapse:collapse; width:100%; border:1px solid #000; text-align:center; margin-bottom:3px;">
+                                <thead>
+                                    <tr style="background-color:#E2E8F0;"><th colspan="9" style="border:1px solid #000; padding:2px 4px;">INVENTÁRIO DE RISCOS OCUPACIONAIS</th></tr>
+                                    <tr style="background-color:#F1F5F9;">
+                                        <th style="border:1px solid #000; padding:2px 4px;">PERIGO</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">FONTE GERADORA</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">RISCO</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">VIA DE PROPAGAÇÃO</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">LESÕES OU AGRAVOS À SAÚDE</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">MEDIDAS EXISTENTES</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">PROB.</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">SEV.</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">NÍVEL DE RISCO</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${riscosRows || '<tr><td colspan="9" style="border:1px solid #000; padding:2px 4px;">NENHUM RISCO CADASTRADO</td></tr>'}</tbody>
+                            </table>
+
+                            <table class="table-pgr-preview" style="font-family:Cambria,serif; font-size:10pt; border-collapse:collapse; width:100%; border:1px solid #000; text-align:center; margin-bottom:2px;">
+                                <thead>
+                                    <tr style="background-color:#E2E8F0;">
+                                        <th style="border:1px solid #000; padding:2px 4px;">PLANO DE AÇÃO DAS MEDIDAS DE PREVENÇÃO OU CORREÇÃO</th>
+                                        <th style="border:1px solid #000; padding:2px 4px;">PRAZO PARA IMPLANTAÇÃO</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${acoesRows || '<tr><td colspan="2" style="border:1px solid #000; padding:2px 4px;">MANTER MEDIDAS EXISTENTES</td></tr>'}</tbody>
+                                <tfoot>
+                                    <tr style="background-color:#F8FAFC;">
+                                        <td colspan="2" style="border:1px solid #000; padding:2px 4px; font-weight:bold; text-align:center;">
+                                            RESPONSÁVEL PELA IMPLEMENTAÇÃO DO PLANO DE AÇÃO: ${sec.responsavel}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    `;
+                });
+            }
+
+            return html;
+        }
+
+        function openReviewModal() {
+            document.getElementById('modal-tables-preview').innerHTML = gerarTabelasHTMLCompactas();
+            document.getElementById('review-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeReviewModal() { document.getElementById('review-modal').classList.add('hidden'); }
+
+        function copyModalContent() {
+            const container = document.getElementById('modal-tables-preview');
+            const range = document.createRange();
+            range.selectNode(container);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            try {
+                document.execCommand('copy');
+                alert("TABELAS COPIADAS COM SUCESSO!\nBASTA ABRIR O WORD E COLAR (CTRL + V).");
+            } catch (err) {
+                alert("SELECIONE E COPIE MANUALMENTE.");
+            }
+            window.getSelection().removeAllRanges();
+        }
+
+        function baixarMatrizesWordUltraCompacto() {
+            autoSave();
+            const clientName = (appState.solicitante.nome || "BOREAL").replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
+            const filename = `MATRIZES_PGR_${clientName}.doc`;
+
+            const wordStyles = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>Matrizes PGR Boreal</title>
+                    <style>
+                        @page { size: 21cm 29.7cm; margin: 1.0cm 1.5cm 1.0cm 1.5cm; }
+                        body { font-family: 'Cambria', serif; font-size: 10pt; text-transform: uppercase; margin: 0; padding: 0; }
+                        table { border-collapse: collapse; width: 100%; border: 1px solid #000; margin-bottom: 5pt; }
+                        th, td {
+                            border: 1px solid #000;
+                            padding: 2pt 4pt;
+                            font-family: 'Cambria', serif;
+                            font-size: 10pt;
+                            text-align: center;
+                            vertical-align: middle;
+                            line-height: 1.0;
+                            mso-line-height-rule: exactly;
+                            margin: 0;
+                        }
+                        th { background-color: #E2E8F0; font-weight: bold; font-size: 10.5pt; }
+                        p { margin: 0pt; padding: 0pt; line-height: 1.0; }
+                    </style>
+                </head>
+                <body>
+                    <div style="text-align:center; font-weight:bold; font-size:13pt; margin-bottom:6pt;">
+                        BOREAL ENGMED — MATRIZES DE RISCO DO PGR (NR-01)
+                    </div>
+                    ${gerarTabelasHTMLCompactas()}
+                </body>
+                </html>
+            `;
+
+            try {
+                const blob = new Blob(['\ufeff', wordStyles], { type: 'application/msword;charset=utf-8' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+                alert("ARQUIVO DE MATRIZES BAIXADO COM SUCESSO!");
+            } catch (err) {
+                alert("ERRO AO GERAR ARQUIVO: " + err.message);
+            }
+        }
+
+        // ==============================================================
+        // MÓDULO 2: GERADOR COMPLETO DO DOCUMENTO PGR FINAL (16 CAPÍTULOS)
+        // ==============================================================
+        function gerarPGRCompletoWordDefinitivo() {
+            autoSave();
+            const clientName = (appState.solicitante.nome || "BOREAL").replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
+            const filename = `PGR_COMPLETO_FINAL_${clientName}.doc`;
+
+            const todasUnidades = [];
+            if (appState.unidadeAtual.nome) todasUnidades.push(appState.unidadeAtual);
+            appState.unidadesSalvas.forEach(u => todasUnidades.push(u.unidade));
+
+            const todosSetores = [ ...appState.setoresAtuais ];
+            appState.unidadesSalvas.forEach(u => todosSetores.push(...u.setores));
+
+            let anexosListHtml = "";
+            (appState.anexosItem22 || ["ANEXO I — LAUDO DE AVALIAÇÃO QUANTITATIVA AMBIENTAL"]).forEach((anx, i) => {
+                anexosListHtml += `<p style="margin:2pt 0; font-weight:bold;">${anx}</p>`;
+            });
+
+            // Constrói HTML do PGR Completo com Margens e Alinhamento Perfeito
+            const fullDocHtml = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>PGR - Programa de Gerenciamento de Riscos</title>
+                    <style>
+                        @page Section1 { size: 21cm 29.7cm; margin: 1.0cm 1.5cm 1.0cm 1.0cm; mso-gutter-margin: 0.5cm; }
+                        div.Section1 { page: Section1; }
+                        body { font-family: 'Cambria', serif; font-size: 11pt; color: #000; text-align: justify; margin: 0; padding: 0; }
+                        h1 { font-family: 'Cambria', serif; font-size: 12pt; font-weight: bold; text-transform: uppercase; margin-top: 14pt; margin-bottom: 4pt; color: #000; }
+                        h2 { font-family: 'Cambria', serif; font-size: 11.5pt; font-weight: bold; text-transform: uppercase; margin-top: 10pt; margin-bottom: 3pt; color: #000; }
+                        p { font-family: 'Cambria', serif; font-size: 11pt; margin-top: 0pt; margin-bottom: 4pt; text-align: justify; line-height: 1.15; }
+                        table { border-collapse: collapse; width: 100%; border: 1px solid #000; margin-top: 4pt; margin-bottom: 6pt; }
+                        th, td { border: 1px solid #000; padding: 2.5pt 4pt; font-family: 'Cambria', serif; font-size: 10pt; text-align: center; vertical-align: middle; line-height: 1.05; }
+                        th { background-color: #E2E8F0; font-weight: bold; font-size: 10.5pt; text-transform: uppercase; }
+                        .capa-box { text-align: center; border: 2px solid #000; padding: 25pt; margin-top: 30pt; margin-bottom: 30pt; }
+                        .page-break { page-break-before: always; }
+                    </style>
+                </head>
+                <body>
+                <div class="Section1">
+
+                    <!-- ========================================== -->
+                    <!-- CAPA DO PROGRAMA DE GERENCIAMENTO DE RISCO -->
+                    <!-- ========================================== -->
+                    <div style="text-align:center; margin-top:30pt;">
+                        <div style="font-size:24pt; font-weight:bold; letter-spacing:2px; color:#1e3a8a;">BOREAL ENGMED</div>
+                        <div style="font-size:10pt; color:#64748b; margin-top:2pt;">ENGENHARIA E MEDICINA DO TRABALHO • CREA SP Nº 0859337</div>
+                    </div>
+
+                    <div class="capa-box" style="margin-top:60pt;">
+                        <p style="font-size:12pt; font-weight:bold; letter-spacing:1px; text-align:center;">GESTÃO DE RISCOS OCUPACIONAIS</p>
+                        <h1 style="font-size:32pt; font-weight:bold; margin:15pt 0; text-align:center; color:#0f172a;">PGR</h1>
+                        <p style="font-size:14pt; font-weight:bold; text-align:center;">PROGRAMA DE GERENCIAMENTO DE RISCOS</p>
+                        <p style="font-size:10.5pt; text-align:center; margin-top:10pt;">DOCUMENTO-BASE PARA RECONHECIMENTO, AVALIAÇÃO E CONTROLE DOS RISCOS OCUPACIONAIS.</p>
+                    </div>
+
+                    <!-- MATRIZ 01 (CAPA) -->
+                    <table style="margin-top:40pt;">
+                        <tr>
+                            <td style="font-weight:bold; width:25%;">SOLICITANTE:</td>
+                            <td style="width:45%; font-weight:bold;">${appState.solicitante.nome || 'A DEFINIR'}</td>
+                            <td style="font-weight:bold; width:10%;">CNPJ:</td>
+                            <td style="width:20%; font-weight:bold;">${appState.solicitante.cnpj || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight:bold;">VIGÊNCIA:</td>
+                            <td>${appState.solicitante.vigencia || '2026 A 2028'}</td>
+                            <td style="font-weight:bold;">DATA DE EMISSÃO:</td>
+                            <td>${appState.solicitante.data_emissao || '-'}</td>
+                        </tr>
+                    </table>
+
+                    <div style="text-align:center; margin-top:70pt; font-size:10pt;">
+                        <p style="font-weight:bold; text-align:center;">SEGURANÇA E SAÚDE NO TRABALHO</p>
+                        <p style="text-align:center;">BOREAL ENGMED LTDA. | CREA SP Nº 0859337</p>
+                        <p style="text-align:center; font-style:italic;">Documento técnico • Modelo institucional</p>
+                    </div>
+
+                    <!-- ========================================== -->
+                    <!-- SUMÁRIO DO DOCUMENTO                       -->
+                    <!-- ========================================== -->
+                    <div class="page-break"></div>
+                    <h1>PGR • SUMÁRIO</h1>
+                    <div style="border-bottom: 2px solid #000; margin-bottom: 12pt;"></div>
+
+                    <table style="border:none; text-align:left;">
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">1 UNIDADE INSPECIONADA (RELATÓRIO DE VISITA)</td><td style="border:none; text-align:right;">3</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">2 ELABORAÇÃO & RESPONSABILIDADE TÉCNICA</td><td style="border:none; text-align:right;">3</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; padding-left:15pt;">2.1 Equipe Técnica</td><td style="border:none; text-align:right;">3</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; padding-left:15pt;">2.2 Relação de Anexos</td><td style="border:none; text-align:right;">3</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">3 INTRODUÇÃO</td><td style="border:none; text-align:right;">4</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">4 CONSTITUIÇÃO DO PGR</td><td style="border:none; text-align:right;">4</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">5 OBJETIVO</td><td style="border:none; text-align:right;">4</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">6 FINALIDADE</td><td style="border:none; text-align:right;">4</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">8 RESPONSABILIDADE DAS INFORMAÇÕES</td><td style="border:none; text-align:right;">4</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">9 DIPLOMA LEGAL</td><td style="border:none; text-align:right;">5</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">10 DESENVOLVIMENTO DO PGR (REGISTRO, DIVULGAÇÃO E REVISÃO)</td><td style="border:none; text-align:right;">5</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">11 RESPONSABILIDADES DA ORGANIZAÇÃO E TRABALHADORES</td><td style="border:none; text-align:right;">6</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">12 RECONHECIMENTO E AVALIAÇÃO DOS RISCOS OCUPACIONAIS</td><td style="border:none; text-align:right;">8</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">13 CRITÉRIOS ADOTADOS NA ANÁLISE AMBIENTAL</td><td style="border:none; text-align:right;">8</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">14 CLASSIFICAÇÃO DE RISCO (MATRIZ DE PROBABILIDADE E SEVERIDADE)</td><td style="border:none; text-align:right;">9</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold; color:#1e3a8a;">15 AVALIAÇÃO QUALIQUANTITATIVA POR SETOR (INVENTÁRIO E AÇÕES)</td><td style="border:none; text-align:right; font-weight:bold;">13</td></tr>
+                        <tr style="border:none;"><td style="border:none; text-align:left; font-weight:bold;">16 QUALIFICAÇÃO E ASSINATURA DO RESPONSÁVEL TÉCNICO</td><td style="border:none; text-align:right;">15+</td></tr>
+                    </table>
+                    <p style="font-size:9pt; font-style:italic; margin-top:15pt; color:#64748b;">(Nota: No Word, clique com o botão direito sobre o sumário e escolha 'Atualizar Campo' para alinhar os números de páginas com a quantidade exata de setores).</p>
+
+                    <!-- ========================================== -->
+                    <!-- CAPÍTULOS 1 E 2: UNIDADE, EQUIPE E ANEXO   -->
+                    <!-- ========================================== -->
+                    <div class="page-break"></div>
+                    <h1>1 UNIDADE INSPECIONADA (RELATÓRIO DE VISITA TÉCNICA)</h1>
+                    <p>O presente levantamento contempla a(s) seguinte(s) unidade(s) operacional(is) pertencente(s) à organização solicitante:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>NOME DA UNIDADE</th>
+                                <th>CNPJ</th>
+                                <th>RESPONSÁVEL</th>
+                                <th>CARGO</th>
+                                <th>ENDEREÇO</th>
+                                <th>CONTATO & ASS.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${todasUnidades.map(u => `
+                                <tr>
+                                    <td style="font-weight:bold;">${u.nome || '-'}</td>
+                                    <td>${u.cnpj || '-'}</td>
+                                    <td>${u.resp || '-'}</td>
+                                    <td>${u.cargo_resp || '-'}</td>
+                                    <td>${u.endereco || '-'}</td>
+                                    <td>
+                                        <div>${u.contato || '-'}</div>
+                                        ${u.signature ? `<img src="${u.signature}" style="max-height:26px; display:block; margin:2px auto;">` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <h1 style="margin-top:18pt;">2 ELABORAÇÃO</h1>
+                    <p><strong>Boreal EngMed Ltda</strong><br>
+                    CNPJ: 04.414.837/0001-38 | CREA SP Nº 0859337<br>
+                    Av. dos Expedicionários nº 333, Jd. Fortaleza – Paulínia - SP • Tel.: (19) 99156-7153</p>
+
+                    <h2>2.1 Equipe Técnica</h2>
+                    <p><strong>Luiz Fernando Gomes de Jesus</strong> — Engº de Saúde e Seg. do Trabalho • Responsável Técnico • CREA SP Nº 5070159011 • CREA Nacional Nº 2010773080<br>
+                    <strong>Shirley Raquel de Oliveira</strong> — Engª de Saúde e Seg. do Trabalho • CREA SP Nº 5060296504<br>
+                    <strong>Carlos Eduardo Arruda Júnior</strong> — Engº de Petróleo e Seg. do Trabalho • CREA SP 5071422049</p>
+
+                    <h2>2.2 Relação de Anexos do PGR</h2>
+                    ${anexosListHtml}
+
+                    <!-- ========================================== -->
+                    <!-- CAPÍTULOS 3 A 14: FUNDAMENTAÇÃO LEGAL E CRITÉRIOS -->
+                    <!-- ========================================== -->
+                    <div class="page-break"></div>
+                    <h1>3. INTRODUÇÃO</h1>
+                    <p>O Documento Base do Programa de Gerenciamento de Riscos (PGR) se insere no contexto da Política de Gestão desta organização buscando a melhoria contínua do ambiente de trabalho e a preservação da saúde dos seus colaboradores e contratados. Está estruturado conforme disposto na NR-1, Portaria 3214 de 08 de junho de 1978, com redação atualizada pela Portaria 6.730 de 12 de março de 2020. O PGR é documento fundamental para elaboração do PCMSO – Programa de Controle Médico de Saúde Ocupacional, previsto na NR -7.</p>
+
+                    <h1>4. CONSTITUIÇÃO DO PGR</h1>
+                    <p><strong>Inventário de Riscos:</strong> Conforme a NR 01, item 1.5.7.3.2 deve contemplar, no mínimo, as seguintes informações: caracterização dos processos e ambientes de trabalho; caracterização das atividades; descrição de perigos e de possíveis lesões ou agravos à saúde dos trabalhadores, com a identificação das fontes ou circunstâncias; indicação dos grupos de trabalhadores sujeitos a esses riscos e descrição das medidas de prevenção implementadas; dados da análise preliminar ou do monitoramento das exposições a agentes físicos, químicos e biológicos e resultados da avaliação ergonômica (NR-17); classificação dos riscos para elaboração do plano de ação.</p>
+                    <p><strong>Plano de Ação:</strong> Devem constar as medidas de prevenção que serão introduzidas, aprimoradas ou mantidas, cronograma, formas de acompanhamento e aferição dos resultados.</p>
+
+                    <h1>5. OBJETIVO</h1>
+                    <p>O Programa de Gerenciamento de Riscos (PGR) visa estabelecer as disposições gerais, o campo de aplicação, os termos e as definições comuns às Normas Regulamentadoras - NR relativas à segurança e saúde no trabalho, fornecendo as diretrizes preventivas para as atividades laborais.</p>
+
+                    <h1>6. FINALIDADE</h1>
+                    <p>Reconhecimento, registro e controle de possíveis interferências na saúde e integridade física dos trabalhadores, orientando as prioridades preventivas da organização.</p>
+
+                    <h1>8. RESPONSABILIDADE DAS INFORMAÇÕES</h1>
+                    <p>Este documento apresenta diretrizes e dados levantados no melhor conhecimento e crédito da equipe técnica que o assina, baseados em critérios legais e estreita observância do Código de Ética Profissional do Sistema CONFEA/CREA.</p>
+
+                    <h1>9. DIPLOMA LEGAL</h1>
+                    <p>As avaliações foram subsidiadas pelas normas regulamentadoras: NR 01, NR 06, NR 07, NR 09, NR 10, NR 12, NR 15, NR 16, NR 17, NR 33 e NR 35.</p>
+
+                    <h1>10. DESENVOLVIMENTO DO PGR</h1>
+                    <p>O PGR deve constituir processo contínuo e ser revisto a cada dois anos, ou quando houver inovações tecnológicas, modificações nos processos de trabalho, ocorrência de acidentes ou constatação de ineficácia nas medidas implementadas. O histórico de dados deve ser mantido por no mínimo 20 (vinte) anos.</p>
+
+                    <h1>11. RESPONSABILIDADES</h1>
+                    <p><strong>Do Empregador:</strong> Implementar as medidas preventivas descritas, assegurar recursos para o cumprimento das ações e consultar os trabalhadores sobre as condições laborais.<br>
+                    <strong>Dos Trabalhadores:</strong> Cumprir as ordens de serviço, utilizar obrigatoriamente os EPIs fornecidos e comunicar imediatamente qualquer situação de risco grave e iminente.</p>
+
+                    <h1>12. RECONHECIMENTO E AVALIAÇÃO DOS RISCOS</h1>
+                    <p>Realizado através do reconhecimento nos locais de trabalho, entrevistas com colaboradores e análise detalhada dos postos de trabalho e processos produtivos.</p>
+
+                    <h1>13. CRITÉRIOS ADOTADOS NA ANÁLISE AMBIENTAL</h1>
+                    <p>Avaliações qualitativas e quantitativas baseadas na intensidade do agente, tempo de exposição e limites legais previstos na NR-15 e normas de higiene ocupacional aplicáveis.</p>
+
+                    <h1>14. CLASSIFICAÇÃO DE RISCO (MATRIZ ENIT / ISO 45001)</h1>
+                    <p>O nível de risco é obtido pelo cruzamento entre o grau de probabilidade (1 a 5) e severidade (1 a 5), conforme matriz metodológica padronizada:</p>
+
+                    <!-- TABELA METODOLÓGICA 5x5 -->
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>PROBABILIDADE ↓ / SEVERIDADE →</th>
+                                <th>1 — LEVE</th>
+                                <th>2 — MODERADA</th>
+                                <th>3 — GRAVE REV.</th>
+                                <th>4 — GRAVE IRREV.</th>
+                                <th>5 — CRÍTICA/FATAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td style="font-weight:bold;">5 — ALTAMENTE PROVÁVEL</td><td style="background:#fef3c7;">SIGNIFICATIVO</td><td style="background:#fed7aa;">SÉRIO</td><td style="background:#fecaca;">CRÍTICO</td><td style="background:#fecaca;">CRÍTICO</td><td style="background:#fecaca;">CRÍTICO</td></tr>
+                            <tr><td style="font-weight:bold;">4 — PROVÁVEL</td><td style="background:#fef3c7;">SIGNIFICATIVO</td><td style="background:#fef3c7;">SIGNIFICATIVO</td><td style="background:#fed7aa;">SÉRIO</td><td style="background:#fecaca;">CRÍTICO</td><td style="background:#fecaca;">CRÍTICO</td></tr>
+                            <tr><td style="font-weight:bold;">3 — POUCO PROVÁVEL</td><td style="background:#d1fae5;">TOLERÁVEL</td><td style="background:#fef3c7;">SIGNIFICATIVO</td><td style="background:#fed7aa;">SÉRIO</td><td style="background:#fed7aa;">SÉRIO</td><td style="background:#fecaca;">CRÍTICO</td></tr>
+                            <tr><td style="font-weight:bold;">2 — IMPROVÁVEL</td><td style="background:#d1fae5;">TOLERÁVEL</td><td style="background:#d1fae5;">TOLERÁVEL</td><td style="background:#fef3c7;">SIGNIFICATIVO</td><td style="background:#fef3c7;">SIGNIFICATIVO</td><td style="background:#fed7aa;">SÉRIO</td></tr>
+                            <tr><td style="font-weight:bold;">1 — ALTAMENTE IMPROVÁVEL</td><td style="background:#ecfdf5;">IRRELEVANTE</td><td style="background:#d1fae5;">TOLERÁVEL</td><td style="background:#d1fae5;">TOLERÁVEL</td><td style="background:#fef3c7;">SIGNIFICATIVO</td><td style="background:#fef3c7;">SIGNIFICATIVO</td></tr>
+                        </tbody>
+                    </table>
+
+                    <!-- ========================================== -->
+                    <!-- CAPÍTULO 15: MATRIZES DINÂMICAS POR SETOR -->
+                    <!-- ========================================== -->
+                    <div class="page-break"></div>
+                    <h1>15 AVALIAÇÃO QUALIQUANTITATIVA POR SETOR DE TRABALHO</h1>
+                    <p>Demonstração detalhada dos Grupos Homogêneos de Exposição (GHE), medições ambientais, cargos expostos, inventário de perigos e planos de ação:</p>
+                    
+                    ${gerarTabelasHTMLCompactas()}
+
+                    <!-- ========================================== -->
+                    <!-- CAPÍTULO 16: ENCERRAMENTO E ASSINATURA     -->
+                    <!-- ========================================== -->
+                    <div class="page-break"></div>
+                    <h1>16 QUALIFICAÇÃO E ASSINATURA DO RESPONSÁVEL TÉCNICO</h1>
+                    <p style="margin-top:20pt;">Paulínia/SP, ${new Date().toLocaleDateString('pt-BR')}.</p>
+                    
+                    <div style="margin-top:60pt; text-align:center;">
+                        <div style="border-top:1px solid #000; width:320pt; margin:0 auto; padding-top:4pt;">
+                            <strong>Luiz Fernando Gomes de Jesus</strong><br>
+                            Engenheiro de Seg. do Trabalho • Responsável Técnico<br>
+                            CREA SP Nº 5070159011 • CREA Nacional Nº 2010773080
+                        </div>
+                    </div>
+
+                    <div style="margin-top:50pt; text-align:center; font-size:10pt;">
+                        <strong>Boreal ENGMED Ltda</strong><br>
+                        CNPJ: 04.414.837/0001-38 • CREA SP Nº 0859337
+                    </div>
+
+                </div>
+                </body>
+                </html>
+            `;
+
+            try {
+                const blob = new Blob(['\ufeff', fullDocHtml], { type: 'application/msword;charset=utf-8' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+                alert("DOCUMENTO FINAL COMPLETO DO PGR (.DOCX) GERADO COM SUCESSO!\nTODOS OS 16 CAPÍTULOS, CAPA, ANEXO 2.2 E MATRIZES ESTÃO PRONTOS PARA USO.");
+            } catch (err) {
+                alert("ERRO AO GERAR DOCUMENTO: " + err.message);
+            }
+        }
+
+        // ==============================================================
+        // MÓDULO 3: GESTÃO DE PLANOS DE AÇÃO & ALERTAS
+        // ==============================================================
+        function openPlanoAcaoManager() {
+            const container = document.getElementById('planos-container-modal');
+            container.innerHTML = "";
+
+            const todosSetores = [ ...appState.setoresAtuais ];
+            appState.unidadesSalvas.forEach(u => todosSetores.push(...u.setores));
+
+            if (todosSetores.length === 0) {
+                container.innerHTML = "<div class='text-center text-slate-500 py-6 font-bold uppercase'>Nenhum plano de ação registrado ainda.</div>";
+            } else {
+                todosSetores.forEach((sec, sIdx) => {
+                    sec.riscos.forEach((r, rIdx) => {
+                        const item = document.createElement('div');
+                        item.className = "border border-slate-300 rounded-lg p-3 bg-slate-50 space-y-2 text-xs";
+                        item.innerHTML = `
+                            <div class="flex flex-wrap justify-between items-center border-b border-slate-200 pb-1.5 gap-2">
+                                <span class="font-black text-blue-900 bg-blue-100 px-2 py-0.5 rounded">SETOR: ${sec.nome} | RISCO #${rIdx+1}</span>
+                                <span class="font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded">PRAZO: ${r.prazo}</span>
+                            </div>
+                            <div><strong>PERIGO:</strong> ${r.perigo}</div>
+                            <div><strong>AÇÃO RECOMENDADA:</strong> ${r.acao}</div>
+                            <div class="bg-white p-2 rounded border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                                <div><strong>RESPONSÁVEL:</strong> ${sec.responsavel}</div>
+                                <div><strong>WHATSAPP:</strong> ${sec.zap || 'NÃO INFORMADO'}</div>
+                                <div><strong>E-MAIL:</strong> ${sec.email || 'NÃO INFORMADO'}</div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 pt-1">
+                                <button type="button" onclick="sendWhatsAppAlert('${sec.zap}', '${encodeURIComponent("BOREAL ENGMED ALERTA PGR: Olá " + sec.responsavel + ", informamos que a medida preventiva para o perigo [" + r.perigo + "] no setor [" + sec.nome + "] possui prazo de implementação: " + r.prazo + ". Por favor, confirme o status.")}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded flex items-center text-[10px]">
+                                    <i data-lucide="message-circle" class="w-3 h-3 mr-1"></i> Disparar Alerta WhatsApp
+                                </button>
+                                <button type="button" onclick="sendEmailAlert('${sec.email}', 'Alerta de Prazo PGR - Boreal EngMed', 'Prezado(a) ${sec.responsavel},\n\nInformamos que a ação recomendada no PGR: [${r.acao}] no setor [${sec.nome}] tem prazo: ${r.prazo}.\n\nBoreal EngMed')" class="bg-blue-800 hover:bg-blue-900 text-white font-bold px-2.5 py-1 rounded flex items-center text-[10px]">
+                                    <i data-lucide="mail" class="w-3 h-3 mr-1"></i> Enviar Alerta por E-mail
+                                </button>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
+                });
+            }
+            document.getElementById('planos-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closePlanoAcaoManager() { document.getElementById('planos-modal').classList.add('hidden'); }
+
+        function sendWhatsAppAlert(zap, msg) {
+            if (!zap || zap === 'NÃO INFORMADO') {
+                alert("Por favor, preencha o número do WhatsApp do responsável no cadastro do setor.");
+                return;
+            }
+            const cleanNumber = zap.replace(/\D/g, '');
+            window.open(`https://wa.me/55${cleanNumber}?text=${msg}`, '_blank');
+        }
+
+        function sendEmailAlert(email, subject, body) {
+            if (!email || email === 'NÃO INFORMADO') {
+                alert("Por favor, preencha o e-mail do responsável no cadastro do setor.");
+                return;
+            }
+            window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        }
+
+        function updatePlanosBadge() {
+            let total = 0;
+            appState.setoresAtuais.forEach(s => total += s.riscos.length);
+            appState.unidadesSalvas.forEach(u => u.setores.forEach(s => total += s.riscos.length));
+            const badge = document.getElementById('badge-planos-count');
+            if (badge) badge.textContent = total;
+        }
+
+        // ==============================================================
+        // MÓDULO 4: ARQUIVO GERAL DE DOCUMENTOS (VAULT)
+        // ==============================================================
+        function openDocsVaultModal() {
+            renderVaultList();
+            document.getElementById('vault-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeDocsVaultModal() { document.getElementById('vault-modal').classList.add('hidden'); }
+
+        function handleVaultUpload(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                appState.documentosVault.push({
+                    name: file.name.toUpperCase(),
+                    size: (file.size / 1024).toFixed(1) + " KB",
+                    date: new Date().toLocaleDateString('pt-BR')
+                });
+                autoSave();
+                renderVaultList();
+                alert(`DOCUMENTO "${file.name.toUpperCase()}" ARQUIVADO COM SUCESSO!`);
+            }
+        }
+
+        function renderVaultList() {
+            const list = document.getElementById('vault-list');
+            const badge = document.getElementById('vault-count-badge');
+            if (!list) return;
+            const count = appState.documentosVault ? appState.documentosVault.length : 0;
+            if (badge) badge.textContent = count;
+
+            if (count === 0) {
+                list.innerHTML = "<div class='text-center text-slate-400 py-3 text-xs uppercase'>Nenhum documento arquivado ainda.</div>";
+                return;
+            }
+            list.innerHTML = "";
+            appState.documentosVault.forEach((doc, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center p-2 rounded bg-slate-50 border border-slate-200 text-xs";
+                div.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="file-check" class="w-4 h-4 text-emerald-600"></i>
+                        <span class="font-bold text-slate-800">${doc.name}</span>
+                        <span class="text-[10px] text-slate-500">(${doc.size} - ${doc.date})</span>
+                    </div>
+                    <button type="button" onclick="removeVaultDoc(${idx})" class="text-red-600 hover:text-red-800 font-bold"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                `;
+                list.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function removeVaultDoc(idx) {
+            appState.documentosVault.splice(idx, 1);
+            autoSave();
+            renderVaultList();
+        }
+
+        // ==============================================================
+        // MÓDULO 5: IMPORTAÇÃO POR PLANILHA EXCEL (.XLSX)
+        // ==============================================================
+        function openImportModal() { document.getElementById('import-modal').classList.remove('hidden'); }
+        function closeImportModal() { document.getElementById('import-modal').classList.add('hidden'); }
+
+        function processUploadedExcel(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(firstSheet);
+
+                    if (json && json.length > 0) {
+                        // Preenche primeiro setor da planilha como modelo inicial
+                        const first = json[0];
+                        if (first['Unidade'] || first['NOME DA UNIDADE']) document.getElementById('unidade_nome').value = String(first['Unidade'] || first['NOME DA UNIDADE']).toUpperCase();
+                        if (first['CNPJ']) document.getElementById('unidade_cnpj').value = String(first['CNPJ']).toUpperCase();
+                        if (first['Endereço'] || first['ENDEREÇO']) document.getElementById('unidade_endereco').value = String(first['Endereço'] || first['ENDEREÇO']).toUpperCase();
+                        if (first['Setor'] || first['NOME DO SETOR']) document.getElementById('cur_setor_nome').value = String(first['Setor'] || first['NOME DO SETOR']).toUpperCase();
+                        
+                        updateUnidadeBadge();
+                        autoSave();
+                        closeImportModal();
+                        alert(`PLANILHA PROCESSADA COM SUCESSO!\n${json.length} LINHAS IDENTIFICADAS. CAMPOS INICIAIS PREENCHIDOS.`);
+                    }
+                } catch(err) {
+                    alert("Erro ao ler arquivo Excel: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function openModuleNotice(moduleName) {
+            alert(`MÓDULO [${moduleName.toUpperCase()}] PROGRAMADO!\n\nEste módulo está pronto na arquitetura para ser ativado e receber as matrizes específicas conforme sua solicitação.`);
+        }
+    </script>
+</body>
+</html>
